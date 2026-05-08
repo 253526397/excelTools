@@ -6,10 +6,16 @@
       "Bash(npx tsx *)",
       "Bash(mkdir \"d:/huangjin/workspace/excelTools/.vscode\")",
       "Bash(git add *)",
-      "Bash(git commit *)"
+      "Bash(git commit *)",
+      "Bash(git push *)",
+      "Bash(git remote *)",
+      "Bash(ssh -T git@github.com)",
+      "Bash(ssh-keyscan -t ed25519 github.com >> ~/.ssh/known_hosts 2>&1)",
+      "Bash(ssh-keygen -t ed25519 -C \"253526397@qq.com\" -f ~/.ssh/id_ed25519 -N \"\")"
     ],
     "additionalDirectories": [
-      "d:\\huangjin\\workspace\\excelTools"
+      "d:\\huangjin\\workspace\\excelTools",
+      "C:\\Users\\wang\\.ssh"
     ]
   }
 }
