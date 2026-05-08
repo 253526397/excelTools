@@ -1,0 +1,25 @@
+// 自动生成于 {{ sourceFile }} 时间: {{ generatedAt }}
+// 表: {{ tableName }}
+// 请勿手动编辑此文件
+
+using System.Collections.Generic;
+{%- if namespace %}
+
+namespace {{ namespace }}
+{
+{%- endif %}
+    /// <summary>
+    /// {{ tableName }} 配置表
+    /// </summary>
+    public class {{ tableName }}
+    {
+{%- for field in fields %}
+{%- if field.comment and field.comment != "" %}
+        /// <summary>{{ field.comment }}</summary>
+{%- endif %}
+        public {{ field.mappedType }} {{ field.pascalName }} { get; set; }
+{%- endfor %}
+    }
+{%- if namespace %}
+}
+{%- endif %}

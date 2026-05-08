@@ -1,0 +1,15 @@
+// 自动生成于 {{ sourceFile }} 时间: {{ generatedAt }}
+// 表: {{ tableName }}
+// 请勿手动编辑此文件
+{%- for enumName in importedEnums %}
+import { {{ enumName }} } from './{{ enumName }}';
+{%- endfor %}
+
+export interface {{ tableName }} {
+{%- for field in fields %}
+{%- if field.comment and field.comment != "" %}
+  /** {{ field.comment }} */
+{%- endif %}
+  {{ field.propertyName }}{% unless field.isArray or field.is2DArray %}?{% endunless %}: {{ field.mappedType }};
+{%- endfor %}
+}

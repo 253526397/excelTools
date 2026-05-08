@@ -1,0 +1,88 @@
+{
+  "tableName": "LevelConfig",
+  "sourceSheet": "LevelConfig",
+  "fields": [
+    {
+      "name": "level",
+      "type": "int",
+      "comment": "等级"
+    },
+    {
+      "name": "expRequired",
+      "type": "int",
+      "comment": "所需经验"
+    },
+    {
+      "name": "maxHp",
+      "type": "int",
+      "comment": "最大HP"
+    },
+    {
+      "name": "maxMp",
+      "type": "int",
+      "comment": "最大MP"
+    },
+    {
+      "name": "unlockSkills",
+      "type": "int[]",
+      "comment": "解锁技能ID列表"
+    }
+  ],
+  "data": [
+    {
+      "level": 1,
+      "expRequired": 0,
+      "maxHp": 100,
+      "maxMp": 50,
+      "unlockSkills": [
+        1001
+      ]
+    },
+    {
+      "level": 2,
+      "expRequired": 100,
+      "maxHp": 150,
+      "maxMp": 75,
+      "unlockSkills": [
+        1001,
+        1002
+      ]
+    },
+    {
+      "level": 3,
+      "expRequired": 250,
+      "maxHp": 220,
+      "maxMp": 100,
+      "unlockSkills": [
+        1001,
+        1002,
+        1003
+      ]
+    },
+    {
+      "level": 4,
+      "expRequired": 500,
+      "maxHp": 300,
+      "maxMp": 130,
+      "unlockSkills": [
+        1001,
+        1002,
+        1003,
+        1004
+      ]
+    },
+    {
+      "level": 5,
+      "expRequired": 1000,
+      "maxHp": 400,
+      "maxMp": 170,
+      "unlockSkills": [
+        1001,
+        1002,
+        1003,
+        1004,
+        1005
+      ]
+    }
+  ]
+}

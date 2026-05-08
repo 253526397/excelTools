@@ -1,0 +1,9 @@
+// 自动生成于 {{ sourceFile }} 时间: {{ generatedAt }}
+// 请勿手动编辑此文件
+
+export enum {{ enumName }} {
+{%- for item in values %}
+  /** {{ item.name }} */
+  {{ item.name }} = {{ item.value }},
+{%- endfor %}
+}

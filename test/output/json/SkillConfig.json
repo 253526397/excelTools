@@ -1,0 +1,198 @@
+{
+  "tableName": "SkillConfig",
+  "sourceSheet": "SkillConfig",
+  "fields": [
+    {
+      "name": "id",
+      "type": "int",
+      "comment": "技能ID"
+    },
+    {
+      "name": "name",
+      "type": "string",
+      "comment": "技能名称"
+    },
+    {
+      "name": "damage",
+      "type": "float",
+      "comment": "伤害值"
+    },
+    {
+      "name": "cost",
+      "type": "int",
+      "comment": "消耗MP"
+    },
+    {
+      "name": "skillType",
+      "type": "SkillType",
+      "comment": "技能类型"
+    },
+    {
+      "name": "targetTypes",
+      "type": "SkillType[]",
+      "comment": "目标类型列表"
+    },
+    {
+      "name": "effects",
+      "type": "object[]",
+      "comment": "附加效果"
+    },
+    {
+      "name": "damageMatrix",
+      "type": "int[][]",
+      "comment": "伤害矩阵"
+    }
+  ],
+  "data": [
+    {
+      "id": 1001,
+      "name": "火球术",
+      "damage": 150.5,
+      "cost": 30,
+      "skillType": "Attack",
+      "targetTypes": [
+        "Enemy"
+      ],
+      "effects": [
+        {
+          "type": "burn",
+          "value": 10
+        }
+      ],
+      "damageMatrix": [
+        [
+          10,
+          20,
+          30
+        ],
+        [
+          40,
+          50,
+          60
+        ],
+        [
+          70,
+          80,
+          90
+        ]
+      ]
+    },
+    {
+      "id": 1002,
+      "name": "冰霜箭",
+      "damage": 80,
+      "cost": 25,
+      "skillType": "Attack",
+      "targetTypes": [
+        "Enemy"
+      ],
+      "effects": [
+        {
+          "type": "slow",
+          "value": 0.3
+        }
+      ],
+      "damageMatrix": [
+        [
+          5,
+          10,
+          15
+        ],
+        [
+          20,
+          25,
+          30
+        ]
+      ]
+    },
+    {
+      "id": 1003,
+      "name": "治愈术",
+      "damage": 0,
+      "cost": 50,
+      "skillType": "Heal",
+      "targetTypes": [
+        "Ally"
+      ],
+      "effects": [
+        {
+          "type": "heal",
+          "value": 200
+        }
+      ],
+      "damageMatrix": [
+        [
+          0,
+          0,
+          0
+        ],
+        [
+          0,
+          50,
+          0
+        ],
+        [
+          0,
+          0,
+          0
+        ]
+      ]
+    },
+    {
+      "id": 1004,
+      "name": "力量祝福",
+      "damage": 0,
+      "cost": 40,
+      "skillType": "Buff",
+      "targetTypes": [
+        "Ally"
+      ],
+      "effects": [
+        {
+          "type": "atkUp",
+          "value": 0.2
+        }
+      ],
+      "damageMatrix": [
+        [
+          1,
+          2
+        ],
+        [
+          3,
+          4
+        ]
+      ]
+    },
+    {
+      "id": 1005,
+      "name": "暗影打击",
+      "damage": 300,
+      "cost": 60,
+      "skillType": "Attack",
+      "targetTypes": [
+        "Enemy"
+      ],
+      "effects": [
+        {
+          "type": "dot",
+          "value": 50
+        }
+      ],
+      "damageMatrix": [
+        [
+          100,
+          200
+        ],
+        [
+          300,
+          400
+        ],
+        [
+          500,
+          600
+        ]
+      ]
+    }
+  ]
+}

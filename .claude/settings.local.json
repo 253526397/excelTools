@@ -1,0 +1,15 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(npm install *)",
+      "Bash(npx tsc *)",
+      "Bash(npx tsx *)",
+      "Bash(mkdir \"d:/huangjin/workspace/excelTools/.vscode\")",
+      "Bash(git add *)",
+      "Bash(git commit *)"
+    ],
+    "additionalDirectories": [
+      "d:\\huangjin\\workspace\\excelTools"
+    ]
+  }
+}

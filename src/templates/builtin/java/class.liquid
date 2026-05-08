@@ -1,0 +1,40 @@
+// 自动生成于 {{ sourceFile }} 时间: {{ generatedAt }}
+// 表: {{ tableName }}
+// 请勿手动编辑此文件
+{%- if package %}
+package {{ package }};
+{%- endif %}
+
+import java.util.List;
+import java.util.ArrayList;
+import java.util.Map;
+import java.util.HashMap;
+
+/**
+ * {{ tableName }} 配置表
+ */
+public class {{ tableName }} {
+{%- for field in fields %}
+{%- if field.comment and field.comment != "" %}
+    /** {{ field.comment }} */
+{%- endif %}
+    private {{ field.mappedType }} {{ field.propertyName }};
+{%- endfor %}
+
+    // ======== Getters & Setters ========
+{%- for field in fields %}
+{%- if field.comment and field.comment != "" %}
+    /** 获取 {{ field.comment }} */
+{%- endif %}
+    public {{ field.mappedType }} get{{ field.pascalName }}() {
+        return {{ field.propertyName }};
+    }
+
+{%- if field.comment and field.comment != "" %}
+    /** 设置 {{ field.comment }} */
+{%- endif %}
+    public void set{{ field.pascalName }}({{ field.mappedType }} {{ field.propertyName }}) {
+        this.{{ field.propertyName }} = {{ field.propertyName }};
+    }
+{%- endfor %}
+}

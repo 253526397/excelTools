@@ -1,0 +1,34 @@
+// 自动生成于 {{ sourceFile }} 时间: {{ generatedAt }}
+// 请勿手动编辑此文件
+{%- if package %}
+package {{ package }};
+{%- endif %}
+
+/**
+ * {{ enumName }} 枚举
+ */
+public enum {{ enumName }} {
+{%- for item in values %}
+    /** {{ item.name }} */
+    {{ item.name }}({{ item.value }}){% if forloop.last %};{% else %},{% endif %}
+{%- endfor %}
+
+    private final int value;
+
+    {{ enumName }}(int value) {
+        this.value = value;
+    }
+
+    public int getValue() {
+        return value;
+    }
+
+    public static {{ enumName }} fromValue(int value) {
+        for ({{ enumName }} e : values()) {
+            if (e.value == value) {
+                return e;
+            }
+        }
+        return null;
+    }
+}
