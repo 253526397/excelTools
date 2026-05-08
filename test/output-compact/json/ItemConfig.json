@@ -1,0 +1,1 @@
+{"t":"ItemConfig","f":[["id","int","道具ID"],["name","string","道具名称"],["type","string","类型"],["price","int","价格"],["stackable","bool","可堆叠"],["attributes","object","属性"]],"d":[[2001,"生命药水","Consumable",100,true,{"hp":100}],[2002,"魔法药水","Consumable",120,true,{"mp":50}],[2003,"铁剑","Weapon",500,false,{"atk":15,"def":0}],[2004,"皮甲","Armor",300,false,{"atk":0,"def":10}]]}

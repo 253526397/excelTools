@@ -1,3 +1,5 @@
+export type JsonFormat = 'verbose' | 'compact';
+
 export type Language = 'typescript' | 'csharp' | 'java';
 
 export type CaseStyle = 'PascalCase' | 'camelCase' | 'snake_case' | 'keep';
@@ -23,6 +25,7 @@ export interface ExceltoolsConfig {
   output: {
     json: string;
     code: string;
+    jsonFormat?: JsonFormat;
   };
   templates: {
     customDir?: string | null;

@@ -22,3 +22,9 @@ export interface SerializableTable {
   fields: { name: string; type: string; comment: string }[];
   data: Record<string, unknown>[];
 }
+
+export interface CompactTable {
+  t: string;
+  f: [string, string, string][];
+  d: unknown[][];
+}

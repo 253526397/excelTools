@@ -13,6 +13,7 @@ const DEFAULT_CONFIG = {
   output: {
     json: './output/json',
     code: './output/code',
+    jsonFormat: 'verbose',
   },
   templates: {
     customDir: null,

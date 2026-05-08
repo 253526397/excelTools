@@ -17,6 +17,7 @@ export interface ConvertOptions {
   codeOnly?: boolean;
   dryRun?: boolean;
   verbose?: boolean;
+  compact?: boolean;
 }
 
 export async function convertCommand(input: string, options: ConvertOptions): Promise<void> {
@@ -95,8 +96,11 @@ export async function convertCommand(input: string, options: ConvertOptions): Pr
 
     // 6. 输出 JSON
     if (!options.codeOnly) {
+      const jsonFormat = options.compact
+        ? 'compact'
+        : (config.output.jsonFormat ?? 'verbose');
       const jsonOutputDir = path.resolve(config.output.json);
-      serializeToJson(tableDataList, jsonOutputDir);
+      serializeToJson(tableDataList, jsonOutputDir, jsonFormat);
     }
 
     // 7. 生成代码

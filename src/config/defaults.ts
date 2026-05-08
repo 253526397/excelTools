@@ -18,6 +18,7 @@ export function defaultConfig(): ExceltoolsConfig {
     output: {
       json: './output/json',
       code: './output/code',
+      jsonFormat: 'verbose',
     },
     templates: {},
     enums: {},

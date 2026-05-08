@@ -18,6 +18,7 @@ program
   .option('-c, --config <path>', '配置文件路径')
   .option('-s, --sheets <names>', '只处理指定工作表(逗号分隔)')
   .option('-t, --templates <dir>', '自定义模板目录')
+  .option('--compact', '输出压缩格式的 JSON（列式数据 + 短键名）')
   .option('--json-only', '只生成 JSON 文件')
   .option('--code-only', '只生成代码文件')
   .option('--dry-run', '只检查不写入文件')
