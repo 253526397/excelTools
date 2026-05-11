@@ -18,7 +18,11 @@
       "Bash(where superpowers *)",
       "Read(//c/Users/wang/.claude/**)",
       "Bash(claude *)",
-      "Bash(superpowers *)"
+      "Bash(superpowers *)",
+      "Bash(rpm -q gstack)",
+      "Bash(apt list *)",
+      "Bash(npm uninstall *)",
+      "WebSearch"
     ],
     "additionalDirectories": [
       "d:\\huangjin\\workspace\\excelTools",

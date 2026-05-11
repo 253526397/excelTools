@@ -1,11 +1,12 @@
 import * as path from 'path';
-import { parseExcel } from '../../core/excel-parser';
+import { parseExcel, detectFormulaCells } from '../../core/excel-parser';
 import { buildTableSchema } from '../../core/schema-builder';
 import { extractData } from '../../core/data-extractor';
 import { serializeToJson } from '../../core/json-serializer';
 import { generateCode } from '../../core/code-generator';
 import { loadConfig } from '../../config/config-loader';
 import { setLogLevel, info, error, debug } from '../../utils/logger';
+import { ValidationCollector, reportValidationIssues } from '../../core/validation-collector';
 
 export interface ConvertOptions {
   config?: string;
@@ -59,18 +60,22 @@ export async function convertCommand(input: string, options: ConvertOptions): Pr
 
     info(`找到 ${sheets.length} 个工作表`);
 
-    // 4. 构建 Schema 并提取数据
+    // 4. 创建校验收集器 + 检测公式单元格
+    const collector = new ValidationCollector();
+    detectFormulaCells(allSheets, collector);
+
+    // 5. 构建 Schema 并提取数据
     const enumKeys = new Set(Object.keys(config.enums));
     const tableDataList = [];
 
     for (const sheet of sheets) {
-      const schema = buildTableSchema(sheet, config.rowMapping, enumKeys);
+      const schema = buildTableSchema(sheet, config.rowMapping, enumKeys, collector);
       if (!schema) {
         debug(`跳过表 ${sheet.sheetName}：无法构建 Schema`);
         continue;
       }
 
-      const data = extractData(sheet, schema, config.rowMapping);
+      const data = extractData(sheet, schema, config.rowMapping, collector);
       if (data.rows.length === 0) {
         debug(`表 ${sheet.sheetName} 无数据行`);
       }
@@ -85,7 +90,17 @@ export async function convertCommand(input: string, options: ConvertOptions): Pr
 
     info(`成功解析 ${tableDataList.length} 个数据表`);
 
-    // 5. Dry-run 模式
+    // 6. 校验报告
+    if (collector.hasIssues()) {
+      reportValidationIssues(collector);
+    }
+
+    if (collector.hasErrors()) {
+      error('表校验发现错误，转换已中止。请修正以上问题后重试。');
+      process.exit(1);
+    }
+
+    // 7. Dry-run 模式
     if (options.dryRun) {
       info('[DRY RUN] 验证通过，未写入文件');
       for (const td of tableDataList) {
@@ -94,7 +109,7 @@ export async function convertCommand(input: string, options: ConvertOptions): Pr
       return;
     }
 
-    // 6. 输出 JSON
+    // 8. 输出 JSON
     if (!options.codeOnly) {
       const jsonFormat = options.compact
         ? 'compact'

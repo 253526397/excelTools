@@ -1,6 +1,8 @@
 import * as XLSX from 'xlsx';
 import type { RawSheetData, CellValue } from '../models/excel.interfaces';
 import { debug, warn } from '../utils/logger';
+import type { ValidationCollector } from './validation-collector';
+import { ValidationSeverity, ValidationCategory } from '../models/validation.interfaces';
 
 export function parseExcel(
   filePath: string,
@@ -66,4 +68,30 @@ export function parseExcel(
   }
 
   return results;
+}
+
+/** 检测原始工作表中未计算的公式单元格（以 = 开头） */
+export function detectFormulaCells(
+  sheets: RawSheetData[],
+  collector: ValidationCollector,
+): void {
+  for (const sheet of sheets) {
+    for (let ri = 0; ri < sheet.rowCount; ri++) {
+      const row = sheet.rows[ri];
+      for (let ci = 0; ci < row.length; ci++) {
+        const cell = row[ci];
+        if (typeof cell === 'string' && /^=/.test(cell)) {
+          collector.add({
+            severity: ValidationSeverity.ERROR,
+            category: ValidationCategory.FORMULA_CELL,
+            location: { sheetName: sheet.sheetName, rowIndex: ri, columnIndex: ci },
+            message: `单元格包含未计算的公式: "${cell}"。请在 Excel 中保存文件以计算公式，或删除公式并直接填写值。`,
+            rawValue: cell,
+            suggestion:
+              '单元格输入了公式但工具无法计算结果。确认公式正确后，在 Excel 中按 Ctrl+S 保存，确保公式被计算为值后重新导出。',
+          });
+        }
+      }
+    }
+  }
 }

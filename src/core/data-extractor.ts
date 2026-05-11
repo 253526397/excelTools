@@ -2,6 +2,8 @@ import type { RawSheetData, ExcelRowMapping } from '../models/excel.interfaces';
 import type { TableSchema } from '../models/schema.interfaces';
 import type { TableData } from '../models/data.interfaces';
 import { warn, debug } from '../utils/logger';
+import type { ValidationCollector } from './validation-collector';
+import { ValidationSeverity, ValidationCategory } from '../models/validation.interfaces';
 
 /**
  * 提取基础类型：去除末尾的 [] 或 [][]
@@ -15,7 +17,12 @@ function getBaseType(type: string): string {
 /**
  * 将单元格字符串值按照声明的类型进行转换
  */
-function coerceValue(raw: unknown, type: string): unknown {
+function coerceValue(
+  raw: unknown,
+  type: string,
+  location: { sheetName: string; rowIndex: number; columnIndex: number; columnName: string },
+  collector: ValidationCollector | undefined,
+): unknown {
   if (raw === null || raw === undefined || raw === '') return null;
 
   const str = String(raw).trim();
@@ -32,7 +39,15 @@ function coerceValue(raw: unknown, type: string): unknown {
           ? parsed
           : [parsed];
       } catch {
-        // 回退到分隔逻辑
+        collector?.add({
+          severity: ValidationSeverity.ERROR,
+          category: ValidationCategory.JSON_PARSE_FAILURE,
+          location,
+          message: `无法将 "${str}" 解析为 JSON 对象，已回退到分隔符解析。`,
+          rawValue: str,
+          expectedType: type,
+          suggestion: '请确保该单元格填写的是合法的 JSON 格式（如 [["a","b"],["c","d"]]）。',
+        });
       }
     }
 
@@ -43,7 +58,7 @@ function coerceValue(raw: unknown, type: string): unknown {
       return row.split(separator)
         .map(s => s.trim())
         .filter(s => s !== '')
-        .map(p => coerceScalar(p, baseType));
+        .map(p => coerceScalar(p, baseType, location, collector));
     });
   }
 
@@ -54,14 +69,22 @@ function coerceValue(raw: unknown, type: string): unknown {
         const parsed = JSON.parse(str);
         return Array.isArray(parsed) ? parsed : [parsed];
       } catch {
-        // 回退到普通分隔逻辑
+        collector?.add({
+          severity: ValidationSeverity.ERROR,
+          category: ValidationCategory.JSON_PARSE_FAILURE,
+          location,
+          message: `无法将 "${str}" 解析为 JSON 数组，已回退到分隔符解析。`,
+          rawValue: str,
+          expectedType: type,
+          suggestion: '请确保该单元格填写的是合法的 JSON 数组格式（如 ["a","b","c"]）。',
+        });
       }
     }
 
     // 一维数组：按分隔符拆分后逐个转换
     const separator = str.includes('|') ? '|' : str.includes(';') ? ';' : ',';
     const parts = str.split(separator).map(s => s.trim()).filter(s => s !== '');
-    return parts.map(p => coerceScalar(p, baseType));
+    return parts.map(p => coerceScalar(p, baseType, location, collector));
   }
 
   // 非数组 object 类型：直接 JSON.parse
@@ -69,21 +92,79 @@ function coerceValue(raw: unknown, type: string): unknown {
     try {
       return JSON.parse(str);
     } catch {
+      collector?.add({
+        severity: ValidationSeverity.ERROR,
+        category: ValidationCategory.JSON_PARSE_FAILURE,
+        location,
+        message: `无法将 "${str}" 解析为 JSON 对象，已保留原始字符串。`,
+        rawValue: str,
+        expectedType: type,
+        suggestion: '请确保该单元格填写的是合法的 JSON 格式（如 {"key":"value"}）。',
+      });
       return str;
     }
   }
 
-  return coerceScalar(str, baseType);
+  return coerceScalar(str, baseType, location, collector);
 }
 
-function coerceScalar(val: string, baseType: string): unknown {
+function coerceScalar(
+  val: string,
+  baseType: string,
+  location: { sheetName: string; rowIndex: number; columnIndex: number; columnName: string },
+  collector: ValidationCollector | undefined,
+): unknown {
   switch (baseType) {
-    case 'int':
-      return parseInt(val, 10) || 0;
-    case 'float':
-      return parseFloat(val) || 0;
-    case 'bool':
-      return val === '1' || val.toLowerCase() === 'true';
+    case 'int': {
+      const trimmed = val.trim();
+      const n = parseInt(trimmed, 10);
+      if (isNaN(n) || !/^-?\d+$/.test(trimmed)) {
+        collector?.add({
+          severity: ValidationSeverity.ERROR,
+          category: ValidationCategory.COERCION_FAILURE,
+          location,
+          message: `无法将 "${val}" 转换为 int 类型，已使用默认值 0。`,
+          rawValue: val,
+          expectedType: 'int',
+          suggestion: '请确保该单元格填写的是整数（如 100），不包含字母、小数点或特殊字符。',
+        });
+        return 0;
+      }
+      return n;
+    }
+    case 'float': {
+      const trimmed = val.trim();
+      const n = parseFloat(trimmed);
+      if (isNaN(n) || !/^-?\d+(\.\d+)?$/.test(trimmed)) {
+        collector?.add({
+          severity: ValidationSeverity.ERROR,
+          category: ValidationCategory.COERCION_FAILURE,
+          location,
+          message: `无法将 "${val}" 转换为 float 类型，已使用默认值 0。`,
+          rawValue: val,
+          expectedType: 'float',
+          suggestion: '请确保该单元格填写的是数字（如 1.5 或 100），不包含字母或特殊字符。',
+        });
+        return 0;
+      }
+      return n;
+    }
+    case 'bool': {
+      const lower = val.trim().toLowerCase();
+      if (lower !== 'true' && lower !== 'false' && val.trim() !== '0' && val.trim() !== '1') {
+        collector?.add({
+          severity: ValidationSeverity.ERROR,
+          category: ValidationCategory.COERCION_FAILURE,
+          location,
+          message: `无法将 "${val}" 转换为 bool 类型，已使用默认值 false。`,
+          rawValue: val,
+          expectedType: 'bool',
+          suggestion: '请填写 true / false 或 1 / 0。',
+        });
+        return false;
+      }
+      return val.trim() === '1' || lower === 'true';
+    }
     case 'string':
       return val;
     default:
@@ -95,7 +176,8 @@ function coerceScalar(val: string, baseType: string): unknown {
 export function extractData(
   raw: RawSheetData,
   schema: TableSchema,
-  rowMapping: ExcelRowMapping
+  rowMapping: ExcelRowMapping,
+  collector?: ValidationCollector,
 ): TableData {
   const { dataStart } = rowMapping;
   const dataRows: Record<string, unknown>[] = [];
@@ -112,7 +194,13 @@ export function extractData(
 
     for (const field of schema.fields) {
       const rawVal = field.columnIndex < row.length ? row[field.columnIndex] : null;
-      const parsed = coerceValue(rawVal, field.type);
+      const location = {
+        sheetName: raw.sheetName,
+        rowIndex: ri,
+        columnIndex: field.columnIndex,
+        columnName: field.name,
+      };
+      const parsed = coerceValue(rawVal, field.type, location, collector);
       dataRow[field.name] = parsed;
 
       if (parsed !== null && parsed !== undefined && parsed !== '') {
