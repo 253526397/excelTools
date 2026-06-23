@@ -7,6 +7,12 @@ import { generateCode } from '../../core/code-generator';
 import { loadConfig } from '../../config/config-loader';
 import { setLogLevel, info, error, debug } from '../../utils/logger';
 import { ValidationCollector, reportValidationIssues } from '../../core/validation-collector';
+import {
+  collectCandidateEnumNames,
+  classifySheets,
+  extractEnumDefinitions,
+  extractEnumsFromData,
+} from '../../core/enum-extractor';
 
 export interface ConvertOptions {
   config?: string;
@@ -64,12 +70,61 @@ export async function convertCommand(input: string, options: ConvertOptions): Pr
     const collector = new ValidationCollector();
     detectFormulaCells(allSheets, collector);
 
-    // 5. 构建 Schema 并提取数据
-    const enumKeys = new Set(Object.keys(config.enums));
+    // 5. 决定枚举数据来源
+    let allEnums: Record<string, Record<string, number>>;
+    let allEnumKeys: Set<string>;
+    let dataSheets = sheets;
+
+    if (config.autoDetectEnums !== false) {
+      // === 自动检测 Excel 枚举 ===
+
+      // Pass 1: 扫描所有 Sheet 的类型行，收集候选枚举名
+      const candidateEnumNames = collectCandidateEnumNames(sheets, config.rowMapping, config.enums);
+
+      // Pass 2: 将 Sheet 分类为枚举定义表 / 数据表
+      const classification = classifySheets(
+        sheets, candidateEnumNames, config.enums, collector
+      );
+      const { enumSheets } = classification;
+      dataSheets = classification.dataSheets;
+
+      info(`枚举定义表: ${enumSheets.length} 个, 数据表: ${dataSheets.length} 个`);
+
+      // Pass 3: 方式一 —— 从专用枚举 Sheet 提取
+      const sheetExtractedEnums = extractEnumDefinitions(enumSheets, config.rowMapping, collector);
+
+      // Pass 4: 方式二 —— 剩余候选枚举名（无专用 Sheet）从数据列中自动收集
+      const sheetEnumKeys = new Set(Object.keys(sheetExtractedEnums));
+      const configEnumKeys = new Set(Object.keys(config.enums));
+      const pendingEnumNames = new Set(
+        [...candidateEnumNames].filter(name => !sheetEnumKeys.has(name) && !configEnumKeys.has(name))
+      );
+      const dataExtractedEnums = extractEnumsFromData(
+        dataSheets, pendingEnumNames, config.rowMapping, collector
+      );
+
+      // 合并枚举（优先级：config.enums > 专用Sheet > 数据列自动收集）
+      allEnums = { ...dataExtractedEnums, ...sheetExtractedEnums, ...config.enums };
+      allEnumKeys = new Set(Object.keys(allEnums));
+
+      if (Object.keys(sheetExtractedEnums).length > 0) {
+        info(`从专用枚举表提取了 ${Object.keys(sheetExtractedEnums).length} 个枚举: ${Object.keys(sheetExtractedEnums).join(', ')}`);
+      }
+      if (Object.keys(dataExtractedEnums).length > 0) {
+        info(`从数据列自动收集了 ${Object.keys(dataExtractedEnums).length} 个枚举: ${Object.keys(dataExtractedEnums).join(', ')}`);
+      }
+    } else {
+      // === 旧流程：仅使用 config.enums ===
+      debug('autoDetectEnums=false，仅使用配置文件中的枚举定义');
+      allEnums = config.enums;
+      allEnumKeys = new Set(Object.keys(allEnums));
+    }
+
+    // 6. 构建 Schema 并提取数据（仅数据 Sheet）
     const tableDataList = [];
 
-    for (const sheet of sheets) {
-      const schema = buildTableSchema(sheet, config.rowMapping, enumKeys, collector);
+    for (const sheet of dataSheets) {
+      const schema = buildTableSchema(sheet, config.rowMapping, allEnumKeys, collector);
       if (!schema) {
         debug(`跳过表 ${sheet.sheetName}：无法构建 Schema`);
         continue;
@@ -90,7 +145,7 @@ export async function convertCommand(input: string, options: ConvertOptions): Pr
 
     info(`成功解析 ${tableDataList.length} 个数据表`);
 
-    // 6. 校验报告
+    // 7. 校验报告
     if (collector.hasIssues()) {
       reportValidationIssues(collector);
     }
@@ -100,7 +155,7 @@ export async function convertCommand(input: string, options: ConvertOptions): Pr
       process.exit(1);
     }
 
-    // 7. Dry-run 模式
+    // 8. Dry-run 模式
     if (options.dryRun) {
       info('[DRY RUN] 验证通过，未写入文件');
       for (const td of tableDataList) {
@@ -109,19 +164,20 @@ export async function convertCommand(input: string, options: ConvertOptions): Pr
       return;
     }
 
-    // 8. 输出 JSON
+    // 9. 输出 JSON
     if (!options.codeOnly) {
       const jsonFormat = options.compact
         ? 'compact'
         : (config.output.jsonFormat ?? 'verbose');
       const jsonOutputDir = path.resolve(config.output.json);
-      serializeToJson(tableDataList, jsonOutputDir, jsonFormat);
+      const mergeJson = config.output.mergeJson ?? false;
+      serializeToJson(tableDataList, jsonOutputDir, jsonFormat, mergeJson);
     }
 
-    // 7. 生成代码
+    // 10. 生成代码（传入合并后的枚举）
     if (!options.jsonOnly) {
       const sourceFileName = path.basename(inputPath);
-      await generateCode(tableDataList, config.languages, config, sourceFileName);
+      await generateCode(tableDataList, config.languages, config, sourceFileName, allEnums);
     }
 
     info('完成!');

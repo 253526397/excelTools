@@ -1,6 +1,7 @@
 import * as fs from 'fs';
 import * as path from 'path';
 import { cosmiconfig } from 'cosmiconfig';
+import * as json5 from 'json5';
 import type { ExceltoolsConfig, Language } from './config.interfaces';
 import { defaultConfig } from './defaults';
 import { debug } from '../utils/logger';
@@ -24,20 +25,39 @@ export async function loadConfig(options: {
   // 1. 加载内置默认值
   const config = defaultConfig();
 
-  // 2. 尝试从文件加载配置
+  // 2. 尝试从文件加载配置（支持 JSON5 格式，向后兼容 JSON）
   let fileConfig: Partial<ExceltoolsConfig> | null = null;
 
   if (options.configPath) {
     // 指定配置文件路径
     const configPath = path.resolve(options.configPath);
     if (fs.existsSync(configPath)) {
-      fileConfig = JSON.parse(fs.readFileSync(configPath, 'utf-8'));
+      const raw = fs.readFileSync(configPath, 'utf-8');
+      fileConfig = parseConfigFile(configPath, raw);
       debug(`加载配置文件: ${configPath}`);
     }
   } else {
     // 使用 cosmiconfig 自动搜索
     try {
-      const explorer = cosmiconfig('exceltools');
+      const explorer = cosmiconfig('exceltools', {
+        loaders: {
+          '.json': (_, content) => parseJsonSafely(content),
+          '.json5': (_, content) => parseJsonSafely(content),
+        },
+        searchPlaces: [
+          'exceltools.config.json5',
+          'exceltools.config.json',
+          'exceltools.config.js',
+          'exceltools.config.cjs',
+          '.exceltoolsrc',
+          '.exceltoolsrc.json5',
+          '.exceltoolsrc.json',
+          '.exceltoolsrc.yaml',
+          '.exceltoolsrc.yml',
+          '.exceltoolsrc.js',
+          '.exceltoolsrc.cjs',
+        ],
+      });
       const result = await explorer.search();
       if (result && !result.isEmpty) {
         fileConfig = result.config as Partial<ExceltoolsConfig>;
@@ -73,6 +93,24 @@ export async function loadConfig(options: {
   }
 
   return config;
+}
+
+/** 使用 JSON5 解析配置文件（向后兼容标准 JSON） */
+function parseJsonSafely(content: string): unknown {
+  try {
+    return json5.parse(content);
+  } catch {
+    // 如果 JSON5 解析失败，回退到标准 JSON
+    return JSON.parse(content);
+  }
+}
+
+/** 解析配置文件内容，支持 JSON5 和 JSON */
+function parseConfigFile(filepath: string, content: string): Partial<ExceltoolsConfig> {
+  if (filepath.endsWith('.json5') || filepath.endsWith('.json')) {
+    return parseJsonSafely(content) as Partial<ExceltoolsConfig>;
+  }
+  return JSON.parse(content);
 }
 
 function validateLanguages(langs: string[]): asserts langs is Language[] {

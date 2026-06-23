@@ -19,6 +19,7 @@ export function defaultConfig(): ExceltoolsConfig {
       json: './output/json',
       code: './output/code',
       jsonFormat: 'verbose',
+      mergeJson: false,
     },
     templates: {},
     enums: {},
@@ -32,6 +33,7 @@ export function defaultConfig(): ExceltoolsConfig {
       csharp: { generateEnums: true, namespace: 'GameConfig', useJsonProperty: true },
       java: { generateEnums: true, package: 'com.game.config', useLombok: true, useJackson: true },
     },
+    autoDetectEnums: true,
     verbose: false,
   };
 }

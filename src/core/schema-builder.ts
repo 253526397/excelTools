@@ -110,7 +110,7 @@ export function buildTableSchema(
           message: `字段 "${name}" (第${ci + 1}列) 的类型 "${typeStr}" 无法识别。`,
           rawValue: typeStr,
           suggestion:
-            `可用的基础类型: int, float, string, bool, object 及其数组形式。如需使用自定义枚举 "${base}"，请在配置文件的 enums 中定义它。`,
+            `可用的基础类型: int, float, string, bool, object 及其数组形式。如需使用自定义枚举 "${base}"，请在配置文件的 enums 中定义它，或在 Excel 中创建一个名为 "${base}" 的 Sheet 来定义枚举值。`,
         });
       }
     }

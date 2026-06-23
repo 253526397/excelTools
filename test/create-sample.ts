@@ -1,9 +1,11 @@
 import * as XLSX from 'xlsx';
 
 // 用代码生成一个示例 Excel 文件用于测试
+// 注意：没有单独的 SkillType 枚举 Sheet，全靠数据列自动提取
 const workbook = XLSX.utils.book_new();
 
 // Sheet 1: SkillConfig（技能配置表）
+// skillType 和 targetTypes 引用了 SkillType 枚举，但没有单独的 SkillType Sheet
 const skillData = [
   ['id', 'name', 'damage', 'cost', 'skillType', 'targetTypes', 'effects', 'damageMatrix'],
   ['int', 'string', 'float', 'int', 'SkillType', 'SkillType[]', 'object[]', 'int[][]'],
@@ -45,4 +47,4 @@ const levelSheet = XLSX.utils.aoa_to_sheet(levelData);
 XLSX.utils.book_append_sheet(workbook, levelSheet, 'LevelConfig');
 
 XLSX.writeFile(workbook, 'test/fixtures/sample.xlsx');
-console.log('示例 Excel 已生成: test/fixtures/sample.xlsx');
+console.log('示例 Excel 已生成: test/fixtures/sample.xlsx (无专用枚举Sheet)');

@@ -1,0 +1,39 @@
+// 自动生成于 {{ sourceFile }} 时间: {{ generatedAt }}
+// 所有配置表统一入口
+// 请勿手动编辑此文件
+
+using System;
+using System.Text.Json;
+{%- if namespace %}
+
+namespace {{ namespace }}
+{
+{%- endif %}
+    /// <summary>
+    /// 配置表统一入口
+    /// </summary>
+    public static class Config
+    {
+        /// <summary>
+        /// 解析并加载所有配置表数据
+        /// </summary>
+        /// <param name="json">合并后的 JSON 字符串（verbose 格式）</param>
+        public static void ParseData(string json)
+        {
+            using var doc = JsonDocument.Parse(json);
+            foreach (var prop in doc.RootElement.EnumerateObject())
+            {
+                switch (prop.Name)
+                {
+{%- for table in tables %}
+                    case "{{ table.tableName }}":
+                        {{ table.tableName }}Data.ParseData(prop.Value);
+                        break;
+{%- endfor %}
+                }
+            }
+        }
+    }
+{%- if namespace %}
+}
+{%- endif %}

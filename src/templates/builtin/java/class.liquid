@@ -9,32 +9,97 @@ import java.util.List;
 import java.util.ArrayList;
 import java.util.Map;
 import java.util.HashMap;
+import java.util.Arrays;
 
 /**
- * {{ tableName }} 配置表
+ * {{ tableName }} 配置表接口
  */
-public class {{ tableName }} {
+public interface I{{ tableName }} {
 {%- for field in fields %}
 {%- if field.comment and field.comment != "" %}
     /** {{ field.comment }} */
 {%- endif %}
-    private {{ field.mappedType }} {{ field.propertyName }};
+    {{ field.mappedType }} get{{ field.pascalName }}();
+    void set{{ field.pascalName }}({{ field.mappedType }} {{ field.propertyName }});
 {%- endfor %}
+}
+
+/**
+ * {{ tableName }} 配置表
+ */
+public class {{ tableName }} implements I{{ tableName }} {
+{%- for field in fields %}
+{%- if field.comment and field.comment != "" %}
+    /** {{ field.comment }} */
+{%- endif %}
+    private {{ field.mappedType }} {{ field.propertyName }}{% if field.is2DArray %} = new ArrayList<>(){% elsif field.isArray %} = new ArrayList<>(){% endif %};
+{%- endfor %}
+
+    /** 无参构造函数 */
+    public {{ tableName }}() {}
+
+    /** 全参构造函数 */
+    public {{ tableName }}(
+{%- for field in fields %}
+        {{ field.mappedType }} {{ field.propertyName }}{% unless forloop.last %},{% endunless %}
+{%- endfor %}
+    ) {
+{%- for field in fields %}
+        this.{{ field.propertyName }} = {{ field.propertyName }};
+{%- endfor %}
+    }
 
     // ======== Getters & Setters ========
 {%- for field in fields %}
 {%- if field.comment and field.comment != "" %}
-    /** 获取 {{ field.comment }} */
+    /** {{ field.comment }} */
 {%- endif %}
-    public {{ field.mappedType }} get{{ field.pascalName }}() {
-        return {{ field.propertyName }};
-    }
-
+    public {{ field.mappedType }} get{{ field.pascalName }}() { return {{ field.propertyName }}; }
 {%- if field.comment and field.comment != "" %}
-    /** 设置 {{ field.comment }} */
+    /** {{ field.comment }} */
 {%- endif %}
-    public void set{{ field.pascalName }}({{ field.mappedType }} {{ field.propertyName }}) {
-        this.{{ field.propertyName }} = {{ field.propertyName }};
-    }
+    public void set{{ field.pascalName }}({{ field.mappedType }} {{ field.propertyName }}) { this.{{ field.propertyName }} = {{ field.propertyName }}; }
+
 {%- endfor %}
+    // ======== 数据存储（key = {{ keyFieldName }}，可遍历） ========
+
+    /** {{ tableName }} 数据存储 */
+    public static class Data
+    {
+        /** 全部数据，可直接 .forEach / for-each 遍历 */
+        public static Map<String, {{ tableName }}> all = new HashMap<>();
+
+        /** 根据 {{ keyFieldName }} 查询 */
+        public static {{ tableName }} get(String key) { return all.get(key); }
+
+        /** 从 JSON 字符串加载（自动兼容 verbose / compact / 纯数组格式） */
+        public static void parseData(String jsonStr) {
+            com.google.gson.Gson gson = new com.google.gson.Gson();
+            com.google.gson.JsonElement root = com.google.gson.JsonParser.parseString(jsonStr);
+            com.google.gson.JsonArray rows;
+
+            if (root.isJsonArray()) {
+                rows = root.getAsJsonArray();
+            } else if (root.isJsonObject()) {
+                com.google.gson.JsonObject rootObj = root.getAsJsonObject();
+                if (rootObj.has("data") && rootObj.get("data").isJsonArray()) {
+                    rows = rootObj.getAsJsonArray("data");
+                } else if (rootObj.has("d") && rootObj.get("d").isJsonArray()) {
+                    rows = rootObj.getAsJsonArray("d");
+                } else {
+                    return;
+                }
+            } else {
+                return;
+            }
+
+            Map<String, {{ tableName }}> map = new HashMap<>();
+            for (com.google.gson.JsonElement item : rows) {
+                {{ tableName }} record = gson.fromJson(item, {{ tableName }}.class);
+                String keyValue = item.getAsJsonObject().get("{{ keyFieldName }}").getAsString();
+                map.put(keyValue, record);
+            }
+            all = map;
+        }
+    }
 }

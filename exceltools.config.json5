@@ -1,11 +1,8 @@
-import * as fs from 'fs';
-import * as path from 'path';
-import { info, error } from '../../utils/logger';
-
-const DEFAULT_CONFIG_JSON5 = `{
+{
   // ============================================================
   //  Excel → JSON + 代码 转换工具 配置文件
   //  支持 JSON5 语法：可使用 // 注释、尾逗号
+  //  优先级：CLI 参数 > 本文件 > 内置默认值
   // ============================================================
 
   // Excel 行映射：定义第几行分别是什么（0-based，即第1行 = 0）
@@ -27,14 +24,10 @@ const DEFAULT_CONFIG_JSON5 = `{
   "output": {
     "json": "./output/json",   // JSON 数据文件输出目录
     "code": "./output/code",   // 代码文件输出目录
-    // jsonFormat: "verbose" | "compact"
-    //   verbose = 完整结构（tableName + fields + data），带缩进
-    //   compact = 压缩格式（短键名 t/f/d），适合程序加载
-    "jsonFormat": "verbose",
-    // mergeJson: 是否将所有表的 JSON 合并输出到一个文件
-    //   false = 每个表独立 .json 文件（默认）
-    //   true  = 所有表合并到 config.json（按表名索引）
-    "mergeJson": false,
+    // jsonFormat: "verbose" = 完整结构带缩进 / "compact" = 压缩短键名
+    "jsonFormat": "compact",
+    // mergeJson: false = 每个表独立文件 / true = 所有表合并到 config.json
+    "mergeJson": true,
   },
 
   // 模板配置
@@ -44,13 +37,11 @@ const DEFAULT_CONFIG_JSON5 = `{
   },
 
   // 全局枚举注册表（可留空 {}，工具会自动从 Excel 检测枚举）
-  // 精确枚举值：在此处定义可精确控制枚举值编号
-  // 专用Sheet：在 Excel 中新建同名 Sheet，列A=名称，列B=值
-  // 自动收集：什么都不做，工具从数据列中自动收集唯一值并编号
-  "enums": {
-    // 示例：
-    // "SkillType": { "Attack": 1, "Defense": 2, "Heal": 3, "Buff": 4 },
-  },
+  // 三种定义方式（优先级从高到低）：
+  //   1. 此处精确定义 → 精确控制枚举值编号
+  //   2. Excel 同名 Sheet → 列A=名称，列B=值
+  //   3. 自动从数据列收集 → 全自动，按字母排序编号
+  "enums": {},
 
   // 排除的工作表名称（不会被解析为数据表）
   "excludeSheets": [],
@@ -66,7 +57,7 @@ const DEFAULT_CONFIG_JSON5 = `{
   "languageSettings": {
     "typescript": {
       "generateEnums": true,     // 是否生成枚举
-      "useStringEnum": false,    // 是否使用字符串枚举（false = 数值枚举）
+      "useStringEnum": false,    // false = 数值枚举, true = 字符串枚举
     },
     "csharp": {
       "namespace": "GameConfig", // 命名空间
@@ -84,21 +75,6 @@ const DEFAULT_CONFIG_JSON5 = `{
   // 是否从 Excel 自动检测枚举定义（推荐开启）
   "autoDetectEnums": true,
 
-  // 是否默认输出详细日志（等同于 -v 参数）
+  // 是否默认输出详细日志（等同于 CLI 的 -v 参数）
   "verbose": false,
-}
-`;
-
-export function initCommand(outputDir?: string): void {
-  const targetDir = outputDir ? path.resolve(outputDir) : process.cwd();
-  const configPath = path.join(targetDir, 'exceltools.config.json5');
-
-  if (fs.existsSync(configPath)) {
-    error(`配置文件已存在: ${configPath}`);
-    process.exit(1);
-  }
-
-  fs.mkdirSync(targetDir, { recursive: true });
-  fs.writeFileSync(configPath, DEFAULT_CONFIG_JSON5, 'utf-8');
-  info(`已创建配置文件: ${configPath}`);
 }

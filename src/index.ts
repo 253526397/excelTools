@@ -10,3 +10,9 @@ export {
   ValidationCategory,
 } from './models/validation.interfaces';
 export type { ValidationIssue, SourceLocation } from './models/validation.interfaces';
+export {
+  collectCandidateEnumNames,
+  classifySheets,
+  extractEnumDefinitions,
+  extractEnumsFromData,
+} from './core/enum-extractor';

@@ -26,6 +26,8 @@ export interface ExceltoolsConfig {
     json: string;
     code: string;
     jsonFormat?: JsonFormat;
+    /** 将所有表的 JSON 合并输出到单个文件（默认 false，每个表独立文件） */
+    mergeJson?: boolean;
   };
   templates: {
     customDir?: string | null;
@@ -38,5 +40,7 @@ export interface ExceltoolsConfig {
     fieldNameToPropertyName: CaseStyle;
   };
   languageSettings: Partial<Record<Language, LanguageSettings>>;
+  /** 是否从 Excel 中自动检测枚举定义表（默认 true） */
+  autoDetectEnums?: boolean;
   verbose: boolean;
 }

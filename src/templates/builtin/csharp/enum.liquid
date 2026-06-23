@@ -1,20 +1,24 @@
 // 自动生成于 {{ sourceFile }} 时间: {{ generatedAt }}
 // 请勿手动编辑此文件
+
+using System.Collections.Generic;
 {%- if namespace %}
 
 namespace {{ namespace }}
 {
 {%- endif %}
+{%- for enum in enums %}
     /// <summary>
-    /// {{ enumName }} 枚举
+    /// {{ enum.name }} 枚举
     /// </summary>
-    public enum {{ enumName }}
+    public enum {{ enum.name }}
     {
-{%- for item in values %}
+{%- for item in enum.values %}
         /// <summary>{{ item.name }}</summary>
         {{ item.name }} = {{ item.value }},
 {%- endfor %}
     }
+{%- endfor %}
 {%- if namespace %}
 }
 {%- endif %}

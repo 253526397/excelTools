@@ -1,0 +1,31 @@
+// 自动生成于 {{ sourceFile }} 时间: {{ generatedAt }}
+// 所有配置表统一入口
+// 请勿手动编辑此文件
+{%- if package %}
+package {{ package }};
+{%- endif %}
+
+import com.google.gson.JsonParser;
+import com.google.gson.JsonObject;
+
+/**
+ * 配置表统一入口
+ */
+public class Config {
+    /**
+     * 解析并加载所有配置表数据
+     * @param json 合并后的 JSON 字符串（verbose 格式）
+     */
+    public static void parseData(String json) {
+        JsonObject root = JsonParser.parseString(json).getAsJsonObject();
+        for (String key : root.keySet()) {
+            switch (key) {
+{%- for table in tables %}
+                case "{{ table.tableName }}":
+                    {{ table.tableName }}.Data.parseData(root.get(key).toString());
+                    break;
+{%- endfor %}
+            }
+        }
+    }
+}

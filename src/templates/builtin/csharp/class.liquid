@@ -3,22 +3,87 @@
 // 请勿手动编辑此文件
 
 using System.Collections.Generic;
+using System.Text.Json;
 {%- if namespace %}
 
 namespace {{ namespace }}
 {
 {%- endif %}
     /// <summary>
-    /// {{ tableName }} 配置表
+    /// {{ tableName }} 配置表接口
     /// </summary>
-    public class {{ tableName }}
+    public interface I{{ tableName }}
     {
 {%- for field in fields %}
 {%- if field.comment and field.comment != "" %}
         /// <summary>{{ field.comment }}</summary>
 {%- endif %}
-        public {{ field.mappedType }} {{ field.pascalName }} { get; set; }
+        {{ field.mappedType }} {{ field.pascalName }} { get; set; }
 {%- endfor %}
+    }
+
+    /// <summary>
+    /// {{ tableName }} 配置表
+    /// </summary>
+    public class {{ tableName }} : I{{ tableName }}
+    {
+{%- for field in fields %}
+{%- if field.comment and field.comment != "" %}
+        /// <summary>{{ field.comment }}</summary>
+{%- endif %}
+        public {{ field.mappedType }} {{ field.pascalName }} { get; set; }{% if field.is2DArray %} = new();{% elsif field.isArray %} = new();{% endif %}
+{%- endfor %}
+    }
+
+    /// <summary>
+    /// {{ tableName }} 数据存储（key = {{ keyFieldName }}，可遍历）
+    /// </summary>
+    public static class {{ tableName }}Data
+    {
+        /// <summary>全部数据，可通过 foreach / LINQ 遍历</summary>
+        public static Dictionary<string, {{ tableName }}> All { get; } = new();
+
+        /// <summary>根据 {{ keyFieldName }} 查询</summary>
+        public static {{ tableName }} Get(string key)
+        {
+            return All.TryGetValue(key, out var value) ? value : null;
+        }
+
+        /// <summary>从 JSON 数据加载（自动兼容 verbose / compact / 纯数组格式）</summary>
+        public static void ParseData(JsonElement obj)
+        {
+            var map = new Dictionary<string, {{ tableName }}>();
+            JsonElement rows;
+
+            if (obj.ValueKind == JsonValueKind.Array)
+            {
+                rows = obj;
+            }
+            else if (obj.TryGetProperty("data", out var dataProp) && dataProp.ValueKind == JsonValueKind.Array)
+            {
+                rows = dataProp;
+            }
+            else if (obj.TryGetProperty("d", out var dProp) && dProp.ValueKind == JsonValueKind.Array)
+            {
+                rows = dProp;
+            }
+            else
+            {
+                return;
+            }
+
+            var options = new JsonSerializerOptions { PropertyNameCaseInsensitive = true };
+            foreach (var item in rows.EnumerateArray())
+            {
+                var record = JsonSerializer.Deserialize<{{ tableName }}>(item.GetRawText(), options);
+                if (record != null)
+                {
+                    var keyValue = item.GetProperty("{{ keyFieldName }}").ToString();
+                    map[keyValue] = record;
+                }
+            }
+            All = map;
+        }
     }
 {%- if namespace %}
 }
