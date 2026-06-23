@@ -95,6 +95,7 @@ export function createTemplateContext(
         keyField,
         keyFieldName: keyField.propertyName,
         keyType: keyField.mappedType,
+        fieldNames: JSON.stringify(enrichedFields.map(f => f.name)),
         boxedKeyType,
         namespace: namespace ?? null,
         package: pkg ?? null,

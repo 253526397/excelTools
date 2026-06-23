@@ -21,9 +21,19 @@ function getBaseType(type: string): string {
   return type;
 }
 
+/** Java 基础类型 → 包装类型（泛型必须用包装类型） */
+const JAVA_BOXED: Record<string, string> = {
+  int: 'Integer',
+  double: 'Double',
+  float: 'Float',
+  boolean: 'Boolean',
+};
+
 function wrap2D(inner: string, lang: Language): string {
-  return lang === 'typescript' ? `${inner}[][]`
-    : `List<List<${inner}>>`;
+  if (lang === 'typescript') return `${inner}[][]`;
+  // Java 泛型不能使用原始类型，需要装箱
+  const boxed = lang === 'java' ? (JAVA_BOXED[inner] ?? inner) : inner;
+  return `List<List<${boxed}>>`;
 }
 
 export function mapFieldType(field: FieldSchema, lang: Language, enumKeys: Set<string>): string {
@@ -56,8 +66,10 @@ export function mapFieldType(field: FieldSchema, lang: Language, enumKeys: Set<s
   // 二维数组基础类型
   if (field.is2DArray) {
     const mapped = TYPE_MAP[baseType]?.[lang] ?? baseType;
-    return lang === 'typescript' ? `${mapped}[][]`
-      : `List<List<${mapped}>>`;
+    // Java 泛型不能使用原始类型，需要装箱
+    const inner = lang === 'java' ? (JAVA_BOXED[mapped] ?? mapped) : mapped;
+    return lang === 'typescript' ? `${inner}[][]`
+      : `List<List<${inner}>>`;
   }
 
   // 一维数组基础类型

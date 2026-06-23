@@ -1,4 +1,4 @@
-// 自动生成于 sample.xlsx 时间: 2026-06-23T12:21:54.080Z
+// 自动生成于 sample.xlsx 时间: 2026-06-23T12:44:21.195Z
 // 表: SkillConfig
 // 请勿手动编辑此文件
 import { SkillType } from './ConfigEnums';
@@ -54,16 +54,24 @@ export class SkillConfig implements ISkillConfig {
 
   /** 从 JSON 数据加载（自动兼容 verbose / compact / 纯数组格式） */
   public static parseData(obj: any): void {
-    // verbose 格式: { tableName, fields, data[] } → 取 data
-    // compact 格式: { f, d[] } → 取 d
-    // 纯数组格式: [...] → 直接使用
+    // verbose 格式: { tableName, fields, data[{...}, ...] } → 取 data
+    // compact 格式: { t, f[[name,type,comment],...], d[[val,...],...] } → 取 d + f 重建对象
+    // 纯数组格式: [{...}, ...] → 直接使用
     let rows: any[];
     if (Array.isArray(obj)) {
       rows = obj;
     } else if (obj && Array.isArray(obj.data)) {
       rows = obj.data;
     } else if (obj && Array.isArray(obj.d)) {
-      rows = obj.d;
+      // compact 格式：列式数据 → 对象数组
+      const fieldNames: string[] = obj.f?.map((f: any[]) => f[0]) ?? ["id","name","damage","cost","skillType","targetTypes","effects","damageMatrix"];
+      rows = obj.d.map((vals: any[]) => {
+        const row: any = {};
+        for (let i = 0; i < fieldNames.length; i++) {
+          row[fieldNames[i]] = vals[i];
+        }
+        return row;
+      });
     } else {
       // 已经是 key→value 映射
       SkillConfig._dataMap = obj;

@@ -1,4 +1,4 @@
-// 自动生成于 sample.xlsx 时间: 2026-06-23T12:21:54.136Z
+// 自动生成于 sample.xlsx 时间: 2026-06-23T12:44:21.254Z
 // 表: SkillConfig
 // 请勿手动编辑此文件
 package com.game.config;
@@ -35,8 +35,8 @@ public interface ISkillConfig {
     List<Map<String, Object>> getEffects();
     void setEffects(List<Map<String, Object>> effects);
     /** 伤害矩阵 */
-    List<List<int>> getDamageMatrix();
-    void setDamageMatrix(List<List<int>> damageMatrix);
+    List<List<Integer>> getDamageMatrix();
+    void setDamageMatrix(List<List<Integer>> damageMatrix);
 }
 
 /**
@@ -58,7 +58,7 @@ public class SkillConfig implements ISkillConfig {
     /** 附加效果 */
     private List<Map<String, Object>> effects = new ArrayList<>();
     /** 伤害矩阵 */
-    private List<List<int>> damageMatrix = new ArrayList<>();
+    private List<List<Integer>> damageMatrix = new ArrayList<>();
 
     /** 无参构造函数 */
     public SkillConfig() {}
@@ -72,7 +72,7 @@ public class SkillConfig implements ISkillConfig {
         SkillType skillType,
         List<SkillType> targetTypes,
         List<Map<String, Object>> effects,
-        List<List<int>> damageMatrix
+        List<List<Integer>> damageMatrix
     ) {
         this.id = id;
         this.name = name;
@@ -114,9 +114,9 @@ public class SkillConfig implements ISkillConfig {
     /** 附加效果 */
     public void setEffects(List<Map<String, Object>> effects) { this.effects = effects; }
     /** 伤害矩阵 */
-    public List<List<int>> getDamageMatrix() { return damageMatrix; }
+    public List<List<Integer>> getDamageMatrix() { return damageMatrix; }
     /** 伤害矩阵 */
-    public void setDamageMatrix(List<List<int>> damageMatrix) { this.damageMatrix = damageMatrix; }
+    public void setDamageMatrix(List<List<Integer>> damageMatrix) { this.damageMatrix = damageMatrix; }
     // ======== 数据存储（key = id，可遍历） ========
 
     /** SkillConfig 数据存储 */

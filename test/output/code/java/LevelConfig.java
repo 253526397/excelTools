@@ -1,4 +1,4 @@
-// 自动生成于 sample.xlsx 时间: 2026-06-23T12:21:54.150Z
+// 自动生成于 sample.xlsx 时间: 2026-06-23T12:44:21.265Z
 // 表: LevelConfig
 // 请勿手动编辑此文件
 package com.game.config;

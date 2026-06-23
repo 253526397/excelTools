@@ -1,4 +1,4 @@
-// 自动生成于 sample.xlsx 时间: 2026-06-23T12:21:54.111Z
+// 自动生成于 sample.xlsx 时间: 2026-06-23T12:44:21.222Z
 // 所有配置表统一入口
 // 请勿手动编辑此文件
 import { SkillConfig } from './SkillConfig';
