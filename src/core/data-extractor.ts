@@ -181,6 +181,8 @@ export function extractData(
 ): TableData {
   const { dataStart } = rowMapping;
   const dataRows: Record<string, unknown>[] = [];
+  const keyField = schema.fields[0];
+  const seenKeys = new Set<string>();
 
   for (let ri = dataStart; ri < raw.rowCount; ri++) {
     const row = raw.rows[ri];
@@ -192,9 +194,25 @@ export function extractData(
     const dataRow: Record<string, unknown> = {};
     let hasValue = false;
 
+    // 检测重复 key
+    const rawKey = keyField.columnIndex < row.length ? row[keyField.columnIndex] : null;
+    const keyStr = rawKey !== null && rawKey !== undefined ? String(rawKey) : '';
+    if (keyStr && seenKeys.has(keyStr)) {
+      collector?.add({
+        severity: ValidationSeverity.ERROR,
+        category: ValidationCategory.COERCION_FAILURE,
+        location: { sourceFile: raw.sourceFile, sheetName: raw.sheetName, rowIndex: ri, columnIndex: keyField.columnIndex, columnName: keyField.name },
+        message: `主键 "${keyStr}" 重复（与前面的数据行冲突），请检查 ${keyField.name} 列的值是否唯一。`,
+        rawValue: rawKey,
+        suggestion: '每行数据的第一个字段（主键）在同一个表内必须唯一，请修改重复的值。',
+      });
+    }
+    if (keyStr) seenKeys.add(keyStr);
+
     for (const field of schema.fields) {
       const rawVal = field.columnIndex < row.length ? row[field.columnIndex] : null;
       const location = {
+        sourceFile: raw.sourceFile,
         sheetName: raw.sheetName,
         rowIndex: ri,
         columnIndex: field.columnIndex,

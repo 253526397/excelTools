@@ -1,4 +1,5 @@
 import * as XLSX from 'xlsx';
+import * as path from 'path';
 import type { RawSheetData, CellValue } from '../models/excel.interfaces';
 import { debug, warn } from '../utils/logger';
 import type { ValidationCollector } from './validation-collector';
@@ -9,6 +10,7 @@ export function parseExcel(
   excludeSheets: string[] = []
 ): RawSheetData[] {
   const workbook = XLSX.readFile(filePath);
+  const sourceFile = path.basename(filePath);
   const results: RawSheetData[] = [];
 
   for (const sheetName of workbook.SheetNames) {
@@ -61,6 +63,7 @@ export function parseExcel(
 
     results.push({
       sheetName,
+      sourceFile,
       rows,
       rowCount: rows.length,
       colCount,

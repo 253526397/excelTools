@@ -60,6 +60,7 @@ export function buildTableSchema(
           severity: ValidationSeverity.WARNING,
           category: ValidationCategory.EMPTY_FIELD_NAME,
           location: {
+            sourceFile: raw.sourceFile,
             sheetName: raw.sheetName,
             rowIndex: dtRow < raw.rowCount ? dtRow : -1,
             columnIndex: ci,
@@ -81,6 +82,7 @@ export function buildTableSchema(
         severity: ValidationSeverity.ERROR,
         category: ValidationCategory.MISSING_TYPE,
         location: {
+          sourceFile: raw.sourceFile,
           sheetName: raw.sheetName,
           rowIndex: dtRow < raw.rowCount ? dtRow : -1,
           columnIndex: ci,
@@ -102,6 +104,7 @@ export function buildTableSchema(
           severity: ValidationSeverity.ERROR,
           category: ValidationCategory.UNKNOWN_TYPE,
           location: {
+            sourceFile: raw.sourceFile,
             sheetName: raw.sheetName,
             rowIndex: dtRow < raw.rowCount ? dtRow : -1,
             columnIndex: ci,

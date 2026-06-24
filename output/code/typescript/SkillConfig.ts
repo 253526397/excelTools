@@ -1,4 +1,4 @@
-// 自动生成于 excel 时间: 2026-06-24T06:58:07.149Z
+// 自动生成于 excel 时间: 2026-06-24T07:17:43.771Z
 // 表: SkillConfig
 // 请勿手动编辑此文件
 import { SkillType } from './ConfigEnums';

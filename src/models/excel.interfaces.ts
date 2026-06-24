@@ -15,7 +15,19 @@ export type CellValue = string | number | boolean | null;
  */
 export interface RawSheetData {
   sheetName: string;
+  sourceFile: string;
   rows: CellValue[][];   // [rowIndex][colIndex]
   rowCount: number;
   colCount: number;
+}
+
+/** 获取 Excel 列字母（0 → A, 1 → B, ..., 26 → AA 等） */
+export function columnLetter(colIndex: number): string {
+  let n = colIndex;
+  let letter = '';
+  while (n >= 0) {
+    letter = String.fromCharCode((n % 26) + 65) + letter;
+    n = Math.floor(n / 26) - 1;
+  }
+  return letter;
 }

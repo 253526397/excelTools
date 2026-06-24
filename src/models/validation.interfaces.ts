@@ -19,6 +19,7 @@ export enum ValidationCategory {
 }
 
 export interface SourceLocation {
+  sourceFile?: string;
   sheetName: string;
   rowIndex: number;
   columnIndex: number;

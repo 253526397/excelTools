@@ -7,7 +7,7 @@ import { serializeToJson } from '../../core/json-serializer';
 import { encryptJsonFiles } from '../../utils/crypto';
 import { generateCode } from '../../core/code-generator';
 import { loadConfig } from '../../config/config-loader';
-import { setLogLevel, info, error, debug } from '../../utils/logger';
+import { setLogLevel, info, error, debug, warn } from '../../utils/logger';
 import { ValidationCollector, reportValidationIssues } from '../../core/validation-collector';
 import {
   collectCandidateEnumNames,
@@ -317,6 +317,7 @@ function mergeSheets(
 
   // 合并数据行（按第一列 key 去重，后面覆盖前面）
   const dataMap = new Map<string, any[]>();
+  const overwrittenKeys: string[] = [];
   for (const sheet of sheets) {
     const srcNames = allNames[sheets.indexOf(sheet)];
     for (let r = dataStart; r < sheet.rowCount; r++) {
@@ -324,11 +325,11 @@ function mergeSheets(
       if (!srcRow || srcRow.every(c => c === null || c === '' || c === undefined)) continue;
 
       const row: any[] = new Array(colCount).fill(null);
-      // 从已有的同名 key 行复制过来（保留前面 sheet 的数据）
       const keyVal = String(srcRow[0] ?? '');
       const existing = dataMap.get(keyVal);
       if (existing) {
         for (let ci = 0; ci < colCount; ci++) row[ci] = existing[ci];
+        overwrittenKeys.push(keyVal);
       }
 
       // 覆盖当前 sheet 的列
@@ -342,10 +343,15 @@ function mergeSheets(
     }
   }
 
+  if (overwrittenKeys.length > 0) {
+    warn(`合并 "${first.sheetName}": ${overwrittenKeys.length} 条数据被覆盖, key: [${overwrittenKeys.join(', ')}]`);
+  }
+
   const allRows = [...headerRows, ...dataMap.values()];
 
   return {
     sheetName: first.sheetName,
+    sourceFile: sheets.map(s => s.sourceFile).filter(Boolean).join(', '),
     rows: allRows,
     rowCount: allRows.length,
     colCount,
