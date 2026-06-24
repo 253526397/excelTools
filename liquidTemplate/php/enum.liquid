@@ -1,0 +1,16 @@
+<?php
+// 自动生成于 {{ sourceFile }} 时间: {{ generatedAt }}
+// 请勿手动编辑此文件
+
+{%- if namespace %}
+namespace {{ namespace }};
+{%- endif %}
+{%- for enum in enums %}
+
+enum {{ enum.name }}: int
+{
+{%- for item in enum.values %}
+    case {{ item.name }} = {{ item.value }};
+{%- endfor %}
+}
+{%- endfor %}

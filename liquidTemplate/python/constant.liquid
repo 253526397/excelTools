@@ -1,0 +1,22 @@
+# 自动生成于 {{ sourceFile }} 时间: {{ generatedAt }}
+# 常量配置表
+# 请勿手动编辑此文件
+
+from typing import Any
+
+class ConfigConstants:
+{%- for item in constants %}
+{%- if item.comment and item.comment != empty %}
+    # {{ item.comment }}
+{%- endif %}
+    {{ item.name }}: {{ item.type }} = {{ item.defaultValue }}
+{%- endfor %}
+
+    @staticmethod
+    def parseData(obj: Any) -> None:
+        if not obj:
+            return
+{%- for item in constants %}
+        if "{{ item.name }}" in obj:
+            ConfigConstants.{{ item.name }} = obj["{{ item.name }}"]
+{%- endfor %}

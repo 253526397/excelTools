@@ -7,17 +7,15 @@
 
   // Excel 行映射：定义第几行分别是什么（0-based，即第1行 = 0）
   "rowMapping": {
-    "fieldNames": 0,   // 字段名所在行（列英文标识，不可重复）
-    "dataTypes": 1,    // 数据类型所在行（int / float / string / bool / object / 枚举名）
-    "comments": 2,     // 注释说明所在行（中文描述，-1 表示无注释行）
-    "dataStart": 3,    // 数据起始行（从第几行开始读取实际数据）
+    "fieldNames": 1,   // 字段名所在行（第2行=英文字段名: id, name, type...）
+    "dataTypes": 2,   // 无类型行（-1 = 所有列默认 string，跳过枚举检测）
+    "comments": 0,     // 注释说明所在行（第1行=中文描述: 道具id, 道具名称...）
+    "dataStart": 3,    // 数据起始行（第3行开始是实际数据）
   },
 
-  // 默认生成的目标语言
+  // 默认生成的目标语言，当前支持的语言有：typescript, csharp, java, python, go, php
   "languages": [
     "typescript",
-    "csharp",
-    "java",
   ],
 
   // 输出目录配置
@@ -74,6 +72,12 @@
 
   // 是否从 Excel 自动检测枚举定义（推荐开启）
   "autoDetectEnums": true,
+
+  // 加密配置
+  "encrypt": {
+    "enabled": true,               // 是否启用加密（JSON → .dat）
+    "key": "mandateofheaven",        // AES 加密密钥，请改成自己的
+  },
 
   // 是否默认输出详细日志（等同于 CLI 的 -v 参数）
   "verbose": false,

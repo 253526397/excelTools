@@ -1,0 +1,35 @@
+// 自动生成于 {{ sourceFile }} 时间: {{ generatedAt }}
+// 常量配置表
+// 请勿手动编辑此文件
+
+using System.Collections.Generic;
+using System.Text.Json;
+{%- if namespace %}
+
+namespace {{ namespace }}
+{
+{%- endif %}
+    /// <summary>
+    /// 常量配置表
+    /// </summary>
+    public static class ConfigConstants
+    {
+{%- for item in constants %}
+{%- if item.comment and item.comment != empty %}
+        /// <summary>{{ item.comment }}</summary>
+{%- endif %}
+        public static {{ item.type }} {{ item.name }} = {{ item.defaultValue }};
+{%- endfor %}
+
+        /// <summary>从 JSON 数据加载常量</summary>
+        public static void ParseData(JsonElement obj)
+        {
+{%- for item in constants %}
+            if (obj.TryGetProperty("{{ item.name }}", out var _{{ item.name }}))
+                {{ item.name }} = JsonSerializer.Deserialize<{{ item.type }}>(_{{ item.name }}.GetRawText());
+{%- endfor %}
+        }
+    }
+{%- if namespace %}
+}
+{%- endif %}

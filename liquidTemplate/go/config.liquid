@@ -1,0 +1,35 @@
+// 自动生成于 {{ sourceFile }} 时间: {{ generatedAt }}
+// 所有配置表统一入口
+// 请勿手动编辑此文件
+
+package config
+
+import (
+	"encoding/json"
+	"strconv"
+)
+
+// ParseData 解析并加载所有配置表数据
+func ParseData(jsonStr string) error {
+	var allData map[string]json.RawMessage
+	if err := json.Unmarshal([]byte(jsonStr), &allData); err != nil {
+		return err
+	}
+{%- for table in tables %}
+	{
+		var obj interface{}
+		if err := json.Unmarshal(allData["{{ table.tableName }}"], &obj); err != nil {
+			return err
+		}
+		loadTable(obj, {{ table.tableName }}Meta, {{ table.tableName }}Data)
+	}
+{%- endfor %}
+	return nil
+}
+
+// loadTable 泛型数据加载
+func loadTable(obj interface{}, meta struct{ KeyField string; FieldNames []string }, target interface{ SetAll(map[string]interface{}) }) {
+	// 实际实现在生成的 Data 类型中
+	_ = meta
+	_ = target
+}

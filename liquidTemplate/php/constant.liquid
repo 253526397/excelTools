@@ -1,0 +1,26 @@
+<?php
+// 自动生成于 {{ sourceFile }} 时间: {{ generatedAt }}
+// 常量配置表
+// 请勿手动编辑此文件
+
+{%- if namespace %}
+namespace {{ namespace }};
+{%- endif %}
+
+class ConfigConstants
+{
+{%- for item in constants %}
+{%- if item.comment and item.comment != empty %}
+    /** {{ item.comment }} */
+{%- endif %}
+    public static {{ item.type }} ${{ item.name }} = {{ item.defaultValue }};
+{%- endfor %}
+
+    /** 从 JSON 数据加载常量 */
+    public static function parseData(array $obj): void
+    {
+{%- for item in constants %}
+        if (array_key_exists('{{ item.name }}', $obj)) self::${{ item.name }} = $obj['{{ item.name }}'];
+{%- endfor %}
+    }
+}

@@ -32,8 +32,15 @@ export function defaultConfig(): ExceltoolsConfig {
       typescript: { generateEnums: true, useStringEnum: false },
       csharp: { generateEnums: true, namespace: 'GameConfig', useJsonProperty: true },
       java: { generateEnums: true, package: 'com.game.config', useLombok: true, useJackson: true },
+      python: { generateEnums: true },
+      go: { generateEnums: true },
+      php: { generateEnums: true },
     },
     autoDetectEnums: true,
+    encrypt: {
+      enabled: false,
+      key: 'exceltools2024',
+    },
     verbose: false,
   };
 }

@@ -1,0 +1,42 @@
+# 自动生成于 {{ sourceFile }} 时间: {{ generatedAt }}
+# 表: {{ tableName }}
+# 请勿手动编辑此文件
+
+from dataclasses import dataclass, field
+from typing import Optional, Any
+{%- if importedEnums.size > 0 %}
+from .config_enums import {{ importedEnums | join: ', ' }}
+{%- endif %}
+
+
+@dataclass
+class I{{ tableName }}:
+{%- for field in fields %}
+{%- if field.comment and field.comment != "" %}
+    # {{ field.comment }}
+{%- endif %}
+    {{ field.propertyName }}: Optional[{{ field.mappedType }}] = None
+{%- endfor %}
+
+
+class {{ tableName }}:
+    _data_map: dict[str, I{{ tableName }}] = {}
+
+    @classmethod
+    def data_map(cls) -> dict[str, I{{ tableName }}]:
+        return cls._data_map
+
+    @classmethod
+    def set_data_map(cls, value: dict[str, I{{ tableName }}]):
+        cls._data_map = value
+
+    @classmethod
+    def Get(cls, key) -> Optional[I{{ tableName }}]:
+        return cls._data_map.get(str(key))
+
+
+# {{ tableName }} 元信息
+{{ tableName }}Meta = {
+    "keyField": "{{ keyFieldName }}",
+    "fieldNames": {{ fieldNames }},
+}

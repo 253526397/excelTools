@@ -1,0 +1,27 @@
+// 自动生成于 {{ sourceFile }} 时间: {{ generatedAt }}
+// 请勿手动编辑此文件
+
+package config
+{%- if enumName %}
+
+// {{ enumName }} 枚举
+type {{ enumName }} int
+
+const (
+{%- for item in values %}
+	{{ enumName }}{{ item.name }} {{ enumName }} = {{ item.value }}
+{%- endfor %}
+)
+{%- else %}
+{%- for enum in enums %}
+
+// {{ enum.name }} 枚举
+type {{ enum.name }} int
+
+const (
+{%- for item in enum.values %}
+	{{ enum.name }}{{ item.name }} {{ enum.name }} = {{ item.value }}
+{%- endfor %}
+)
+{%- endfor %}
+{%- endif %}

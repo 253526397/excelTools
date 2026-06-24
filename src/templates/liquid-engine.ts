@@ -101,7 +101,7 @@ export function createTemplateContext(
         package: pkg ?? null,
         generatedAt: new Date().toISOString(),
         importedEnums: importedEnums ?? [],
-        enumFileName: lang === 'typescript' ? 'ConfigEnums' : lang === 'csharp' ? 'ConfigEnums' : null,
+        enumFileName: lang === 'typescript' ? 'ConfigEnums' : lang === 'csharp' ? 'ConfigEnums' : lang === 'python' ? 'config_enums' : lang === 'php' ? 'ConfigEnums' : lang === 'go' ? 'config_enums' : null,
         dataEntries: entries,
       };
     },

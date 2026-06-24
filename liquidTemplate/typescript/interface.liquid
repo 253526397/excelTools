@@ -1,0 +1,39 @@
+// 自动生成于 {{ sourceFile }} 时间: {{ generatedAt }}
+// 表: {{ tableName }}
+// 请勿手动编辑此文件
+{%- if importedEnums.size > 0 %}
+import { {{ importedEnums | join: ', ' }} } from './{{ enumFileName }}';
+{%- endif %}
+
+export interface I{{ tableName }} {
+{%- for field in fields %}
+{%- if field.comment and field.comment != "" %}
+  /** {{ field.comment }} */
+{%- endif %}
+  {{ field.propertyName }}{% unless field.isArray or field.is2DArray %}?{% endunless %}: {{ field.mappedType }};
+{%- endfor %}
+}
+
+export class {{ tableName }} {
+  /** 数据 Map，key = {{ keyFieldName }}，可直接 for...in / Object.keys 遍历 */
+  public static dataMap: Record<string, I{{ tableName }}> = {};
+
+  /** 根据 {{ keyFieldName }} 查询 */
+  public static Get(key: number | string): I{{ tableName }} | undefined {
+    return {{ tableName }}.dataMap[String(key)];
+  }
+
+  /** 根据字段值查找 */
+  public static Find(field: keyof I{{ tableName }}, value: any): I{{ tableName }} | undefined {
+    for (const k in {{ tableName }}.dataMap) {
+      if ({{ tableName }}.dataMap[k][field] == value) return {{ tableName }}.dataMap[k];
+    }
+    return undefined;
+  }
+}
+
+/** {{ tableName }} 元信息 */
+export const {{ tableName }}Meta = {
+  keyField: '{{ keyFieldName }}',
+  fieldNames: {{ fieldNames }},
+};

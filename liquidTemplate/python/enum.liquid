@@ -1,0 +1,12 @@
+# 自动生成于 {{ sourceFile }} 时间: {{ generatedAt }}
+# 请勿手动编辑此文件
+
+from enum import IntEnum
+
+{%- for enum in enums %}
+
+class {{ enum.name }}(IntEnum):
+{%- for item in enum.values %}
+    {{ item.name }} = {{ item.value }}
+{%- endfor %}
+{%- endfor %}

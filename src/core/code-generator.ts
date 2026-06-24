@@ -14,6 +14,7 @@ export async function generateCode(
   config: ExceltoolsConfig,
   sourceFile: string,
   allEnums?: Record<string, Record<string, number>>,
+  constants?: { name: string; type: string; value: unknown; comment: string }[],
 ): Promise<void> {
   const mergedEnums = allEnums ?? config.enums;
   const enumKeys = new Set(Object.keys(mergedEnums));
@@ -26,7 +27,7 @@ export async function generateCode(
     const langSettings = config.languageSettings[lang];
 
     for (const table of tableDataList) {
-      const mainTemplateName = lang === 'typescript' ? 'interface' : 'class';
+      const mainTemplateName = lang === 'typescript' ? 'interface' : lang === 'go' ? 'struct' : 'class';
 
       try {
         const templatePath = resolveTemplatePath(
@@ -76,7 +77,7 @@ export async function generateCode(
 
         const rendered = await liquid.parseAndRender(templateSource, variables);
 
-        const ext = lang === 'typescript' ? 'ts' : lang === 'csharp' ? 'cs' : 'java';
+        const ext = lang === 'typescript' ? 'ts' : lang === 'csharp' ? 'cs' : lang === 'java' ? 'java' : lang === 'python' ? 'py' : lang === 'go' ? 'go' : 'php';
         const filePath = path.join(langOutputDir, `${table.tableName}.${ext}`);
         fs.writeFileSync(filePath, rendered, 'utf-8');
         info(`代码已生成: ${filePath}`);
@@ -90,10 +91,202 @@ export async function generateCode(
       await generateConfigFile(lang, tableDataList, config, langOutputDir, sourceFile);
     }
 
+    // 生成常量文件
+    if (constants && constants.length > 0) {
+      await generateConstantsFile(lang, constants, config, langOutputDir, sourceFile);
+    }
+
     // 生成枚举文件
     if (mergedEnums && Object.keys(mergedEnums).length > 0) {
       await generateEnumFiles(lang, mergedEnums, config, langOutputDir, sourceFile);
     }
+  }
+}
+
+// ========== 常量文件生成 ==========
+
+/**
+ * 解析常量值：根据 Excel 类型和原始字符串值，转换为目标语言字面量
+ * 复用 formatValue 处理数组/2D 数组的序列化
+ */
+function formatConstValue(val: unknown, type: string, lang: Language): string {
+  if (val === null || val === undefined) return lang === 'python' ? 'None' : lang === 'go' || lang === 'php' ? 'null' : 'null';
+
+  const str = String(val).trim();
+  if (!str) return lang === 'python' ? 'None' : lang === 'go' || lang === 'php' ? 'null' : 'null';
+
+  const is2D = type.endsWith('[][]');
+  const isArray = !is2D && type.endsWith('[]');
+  const bt = is2D ? type.slice(0, -4) : isArray ? type.slice(0, -2) : type;
+
+  // 二维数组
+  if (is2D) {
+    const rows = str.split(';').filter(r => r.trim());
+    const parsed = rows.map(row => {
+      const sep = row.includes('|') ? '|' : ',';
+      return row.split(sep).map(s => s.trim()).filter(Boolean).map(p => formatScalarConst(p, bt, lang));
+    });
+    if (lang === 'typescript') return `[${parsed.map(r => `[${r.join(', ')}]`).join(', ')}]`;
+    if (lang === 'python') return `[${parsed.map(r => `[${r.join(', ')}]`).join(', ')}]`;
+    if (lang === 'go') return `[][]${goType(bt)}{${parsed.map(r => `{${r.join(', ')}}`).join(', ')}}`;
+    return `[${parsed.map(r => `[${r.join(', ')}]`).join(', ')}]`;
+  }
+
+  // 一维数组
+  if (isArray) {
+    const sep = str.includes('|') ? '|' : str.includes(';') ? ';' : ',';
+    const parts = str.split(sep).map(s => s.trim()).filter(Boolean).map(p => formatScalarConst(p, bt, lang));
+    if (lang === 'typescript') return `[${parts.join(', ')}]`;
+    if (lang === 'python') return `[${parts.join(', ')}]`;
+    if (lang === 'go') return `[]${goType(bt)}{${parts.join(', ')}}`;
+    if (lang === 'csharp') return `new List<${bt}> { ${parts.join(', ')} }`;
+    if (lang === 'java') return `Arrays.asList(${parts.join(', ')})`;
+    if (lang === 'php') return `[${parts.join(', ')}]`;
+    return `[${parts.join(', ')}]`;
+  }
+
+  return formatScalarConst(str, bt, lang);
+}
+
+function formatScalarConst(str: string, bt: string, lang: Language): string {
+  switch (bt) {
+    case 'int': return String(parseInt(str, 10) || 0);
+    case 'float': return String(parseFloat(str) || 0);
+    case 'bool':
+      if (lang === 'python') return str === 'true' || str === '1' ? 'True' : 'False';
+      if (lang === 'go' || lang === 'php') return str === 'true' || str === '1' ? 'true' : 'false';
+      return str === 'true' || str === '1' ? 'true' : 'false';
+    case 'string': default:
+      return `"${str.replace(/\\/g, '\\\\').replace(/"/g, '\\"')}"`;
+  }
+}
+
+function goType(bt: string): string {
+  const m: Record<string, string> = { int: 'int', float: 'float64', string: 'string', bool: 'bool' };
+  return m[bt] ?? bt;
+}
+
+/** Java 类型装箱 + elementClass */
+function javaBoxConst(type: string): { type: string; innerType?: string; elementClass: string } {
+  const BOX: Record<string, string> = { int: 'Integer', float: 'Double', bool: 'Boolean', string: 'String' };
+  const is2D = type.endsWith('[][]');
+  const isArr = !is2D && type.endsWith('[]');
+  const bt = is2D ? type.slice(0, -4) : isArr ? type.slice(0, -2) : type;
+  const boxed = BOX[bt] ?? bt;
+  if (is2D) return { type: `List<List<${boxed}>>`, innerType: `List<${boxed}>`, elementClass: `${boxed}.class` };
+  if (isArr) return { type: `List<${boxed}>`, elementClass: `${boxed}.class` };
+  return { type: boxed, elementClass: `${boxed}.class` };
+}
+
+function getConstDefault(type: string, lang: Language): string {
+  const is2D = type.endsWith('[][]');
+  const isArray = !is2D && type.endsWith('[]');
+  if (is2D) {
+    if (lang === 'typescript') return '[]';
+    if (lang === 'python' || lang === 'php') return '[]';
+    if (lang === 'go') return 'nil';
+    if (lang === 'csharp') return 'new List<List<>>()';
+    if (lang === 'java') return 'new ArrayList<>()';
+    return '[]';
+  }
+  if (isArray) {
+    if (lang === 'python' || lang === 'php') return '[]';
+    if (lang === 'go') return 'nil';
+    if (lang === 'csharp') return 'new List<>()';
+    if (lang === 'java') return 'new ArrayList<>()';
+    return '[]';
+  }
+  const bt = type;
+  if (bt === 'int' || bt === 'float') return '0';
+  if (bt === 'bool') return lang === 'python' ? 'False' : lang === 'go' ? 'false' : 'false';
+  if (bt === 'string') return lang === 'python' ? '""' : lang === 'go' || lang === 'php' ? '""' : '""';
+  return lang === 'python' ? 'None' : lang === 'go' || lang === 'php' ? 'null' : 'null';
+}
+
+/** 将 Excel 类型映射到目标语言类型（复用 type-mapping） */
+function mapConstType(type: string, lang: Language): string {
+  const bt = type.endsWith('[][]') ? type.slice(0, -4) : type.endsWith('[]') ? type.slice(0, -2) : type;
+  const is2D = type.endsWith('[][]');
+  const isArray = !is2D && type.endsWith('[]');
+
+  // 基础类型映射
+  const BASE: Record<string, Record<string, string>> = {
+    int: { typescript: 'number', csharp: 'int', java: 'int', python: 'int', go: 'int', php: 'int' },
+    float: { typescript: 'number', csharp: 'float', java: 'double', python: 'float', go: 'float64', php: 'float' },
+    string: { typescript: 'string', csharp: 'string', java: 'String', python: 'str', go: 'string', php: 'string' },
+    bool: { typescript: 'boolean', csharp: 'bool', java: 'boolean', python: 'bool', go: 'bool', php: 'bool' },
+  };
+
+  const base = BASE[bt]?.[lang] ?? bt;
+
+  if (is2D) {
+    if (lang === 'typescript') return `${base}[][]`;
+    if (lang === 'python') return `list[list[${base}]]`;
+    if (lang === 'go') return `[][]${base}`;
+    if (lang === 'php') return 'array';
+    return `List<List<${base}>>`;
+  }
+  if (isArray) {
+    if (lang === 'typescript') return `${base}[]`;
+    if (lang === 'python') return `list[${base}]`;
+    if (lang === 'go') return `[]${base}`;
+    if (lang === 'csharp') return `List<${base}>`;
+    if (lang === 'java') return `List<${base}>`;
+    if (lang === 'php') return 'array';
+    return `${base}[]`;
+  }
+  return base;
+}
+
+async function generateConstantsFile(
+  lang: Language,
+  constants: { name: string; type: string; value: unknown; comment: string }[],
+  config: ExceltoolsConfig,
+  outputDir: string,
+  sourceFile: string,
+): Promise<void> {
+  try {
+    const { liquid } = createTemplateContext(lang, new Set());
+    const templatePath = resolveTemplatePath('constant', lang, config.templates.customDir);
+    if (!fs.existsSync(templatePath)) return;
+    const templateSource = fs.readFileSync(templatePath, 'utf-8');
+
+    const items = constants.map(c => {
+      const base = {
+        name: c.name,
+        type: mapConstType(c.type, lang),
+        value: formatConstValue(c.value, c.type, lang),
+        defaultValue: getConstDefault(c.type, lang),
+        comment: c.comment,
+      } as Record<string, unknown>;
+      // Java 泛型需要装箱类型 + elementClass
+      if (lang === 'java') {
+        const jBoxed = javaBoxConst(c.type);
+        base.type = jBoxed.type;
+        base.innerType = jBoxed.innerType;
+        base.elementClass = jBoxed.elementClass;
+      }
+      return base;
+    });
+
+    const langSettings = config.languageSettings[lang];
+    const variables = {
+      sourceFile,
+      generatedAt: new Date().toISOString(),
+      constants: items,
+      namespace: 'namespace' in (langSettings ?? {})
+        ? (langSettings as { namespace?: string | null }).namespace : null,
+      package: 'package' in (langSettings ?? {})
+        ? (langSettings as { package?: string | null }).package : null,
+    };
+    const rendered = await liquid.parseAndRender(templateSource, variables);
+
+    const ext = lang === 'typescript' ? 'ts' : lang === 'csharp' ? 'cs' : lang === 'java' ? 'java' : lang === 'python' ? 'py' : lang === 'go' ? 'go' : 'php';
+    const filePath = path.join(outputDir, `ConfigConstants.${ext}`);
+    fs.writeFileSync(filePath, rendered, 'utf-8');
+    info(`常量已生成: ${filePath}`);
+  } catch (err) {
+    warn(`生成常量 (${lang}) 失败: ${err instanceof Error ? err.message : err}`);
   }
 }
 
@@ -124,7 +317,7 @@ async function generateConfigFile(
 
     const rendered = await liquid.parseAndRender(templateSource, variables);
 
-    const ext = lang === 'typescript' ? 'ts' : lang === 'csharp' ? 'cs' : 'java';
+    const ext = lang === 'typescript' ? 'ts' : lang === 'csharp' ? 'cs' : lang === 'java' ? 'java' : lang === 'python' ? 'py' : lang === 'go' ? 'go' : 'php';
     const filePath = path.join(outputDir, `Config.${ext}`);
     fs.writeFileSync(filePath, rendered, 'utf-8');
     info(`配置入口已生成: ${filePath}`);
@@ -261,6 +454,8 @@ function formatRow(
       const parts = fields.map(f => formatValue(row[f.name], f, lang));
       return `new ${tableName}(${parts.join(', ')})`;
     }
+    default:
+      return JSON.stringify(row);
   }
 }
 
@@ -281,7 +476,7 @@ async function generateEnumFiles(
     values: Object.entries(values).map(([k, v]) => ({ name: k, value: v })),
   }));
 
-  if (lang === 'typescript' || lang === 'csharp') {
+  if (lang === 'typescript' || lang === 'csharp' || lang === 'python' || lang === 'php') {
     try {
       const templatePath = resolveTemplatePath('enum', lang, config.templates.customDir);
       const templateSource = fs.readFileSync(templatePath, 'utf-8');
@@ -295,7 +490,7 @@ async function generateEnumFiles(
 
       const rendered = await liquid.parseAndRender(templateSource, variables);
 
-      const ext = lang === 'typescript' ? 'ts' : 'cs';
+      const ext = lang === 'python' ? 'py' : lang === 'php' ? 'php' : lang === 'typescript' ? 'ts' : 'cs';
       const filePath = path.join(outputDir, `ConfigEnums.${ext}`);
       fs.writeFileSync(filePath, rendered, 'utf-8');
       info(`枚举已生成: ${filePath}`);
@@ -318,11 +513,12 @@ async function generateEnumFiles(
 
         const rendered = await liquid.parseAndRender(templateSource, variables);
 
-        const filePath = path.join(outputDir, `${entry.name}.java`);
+        const perExt = lang === 'go' ? 'go' : 'java';
+        const filePath = path.join(outputDir, `${entry.name}.${perExt}`);
         fs.writeFileSync(filePath, rendered, 'utf-8');
         info(`枚举已生成: ${filePath}`);
       } catch (err) {
-        warn(`生成枚举 ${entry.name} (java) 失败: ${err instanceof Error ? err.message : err}`);
+        warn(`生成枚举 ${entry.name} (${lang}) 失败: ${err instanceof Error ? err.message : err}`);
       }
     }
   }

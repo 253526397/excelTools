@@ -1,0 +1,20 @@
+// 自动生成于 {{ sourceFile }} 时间: {{ generatedAt }}
+// 常量配置表
+// 请勿手动编辑此文件
+
+export class ConfigConstants {
+{%- for item in constants %}
+{%- if item.comment and item.comment != empty %}
+  /** {{ item.comment }} */
+{%- endif %}
+  public static {{ item.name }}: {{ item.type }} = {{ item.defaultValue }};
+{%- endfor %}
+
+  /** 从 JSON 数据加载常量 */
+  public static parseData(obj: any): void {
+    if (!obj) return;
+{%- for item in constants %}
+    if (obj['{{ item.name }}'] !== undefined) ConfigConstants.{{ item.name }} = obj['{{ item.name }}'];
+{%- endfor %}
+  }
+}

@@ -42,9 +42,10 @@ export function serializeToJson(
       }
     }
 
-    const filename = format === 'compact' ? 'config.json' : 'config.json';
+    const filename = 'config.json';
     const filePath = path.join(outputDir, filename);
-    fs.writeFileSync(filePath, JSON.stringify(merged, null, 2), 'utf-8');
+    const indent = format === 'compact' ? 0 : 2;
+    fs.writeFileSync(filePath, JSON.stringify(merged, null, indent), 'utf-8');
     info(`JSON 已合并输出: ${filePath}`);
     debug(`  ${tableDataList.length} 个表`);
   } else {

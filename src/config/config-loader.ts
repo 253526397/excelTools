@@ -6,7 +6,7 @@ import type { ExceltoolsConfig, Language } from './config.interfaces';
 import { defaultConfig } from './defaults';
 import { debug } from '../utils/logger';
 
-const ALL_LANGUAGES: Language[] = ['typescript', 'csharp', 'java'];
+const ALL_LANGUAGES: Language[] = ['typescript', 'csharp', 'java', 'python', 'go', 'php'];
 
 /**
  * 合并配置：用户配置 + CLI参数 → 最终配置

@@ -1,0 +1,50 @@
+// 自动生成于 {{ sourceFile }} 时间: {{ generatedAt }}
+// 表: {{ tableName }}
+// 请勿手动编辑此文件
+
+package config
+
+{%- if importedEnums.size > 0 %}
+import (
+{%- for enumName in importedEnums %}
+	"{{ enumName }}"
+{%- endfor %}
+)
+{%- endif %}
+
+// I{{ tableName }} 配置表接口
+type I{{ tableName }} struct {
+{%- for field in fields %}
+{%- if field.comment and field.comment != "" %}
+	// {{ field.comment }}
+{%- endif %}
+	{{ field.pascalName }} {{ field.mappedType }} `json:"{{ field.propertyName }}"`
+{%- endfor %}
+}
+
+// {{ tableName }}Data 数据存储
+type {{ tableName }}Data struct {
+	All map[string]I{{ tableName }}
+}
+
+// New{{ tableName }}Data 创建数据实例
+func New{{ tableName }}Data() *{{ tableName }}Data {
+	return &{{ tableName }}Data{All: make(map[string]I{{ tableName }})}
+}
+
+// Get 根据 {{ keyFieldName }} 查询
+func (d *{{ tableName }}Data) Get(key string) *I{{ tableName }} {
+	if v, ok := d.All[key]; ok {
+		return &v
+	}
+	return nil
+}
+
+// {{ tableName }}Meta 元信息
+var {{ tableName }}Meta = struct {
+	KeyField   string
+	FieldNames []string
+}{
+	KeyField:   "{{ keyFieldName }}",
+	FieldNames: {{ fieldNames }},
+}

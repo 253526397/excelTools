@@ -1,0 +1,59 @@
+// 自动生成于 {{ sourceFile }} 时间: {{ generatedAt }}
+// 常量配置表
+// 请勿手动编辑此文件
+{%- if package %}
+package {{ package }};
+{%- endif %}
+
+import java.util.List;
+import java.util.ArrayList;
+import java.util.Arrays;
+import com.google.gson.Gson;
+import com.google.gson.JsonParser;
+import com.google.gson.JsonObject;
+import com.google.gson.JsonArray;
+import com.google.gson.JsonElement;
+
+/**
+ * 常量配置表
+ */
+public class ConfigConstants {
+{%- for item in constants %}
+{%- if item.comment and item.comment != empty %}
+    /** {{ item.comment }} */
+{%- endif %}
+    public static {{ item.type }} {{ item.name }} = {{ item.defaultValue }};
+{%- endfor %}
+
+    private static final Gson gson = new Gson();
+
+    /** 从 JSON 数据加载常量 */
+    public static void parseData(String jsonStr) {
+        JsonObject obj = JsonParser.parseString(jsonStr).getAsJsonObject();
+{%- for item in constants %}
+        if (obj.has("{{ item.name }}")) {
+{%- if item.type contains 'List<List' %}
+            JsonArray outer = obj.getAsJsonArray("{{ item.name }}");
+            {{ item.type }} list2d = new ArrayList<>();
+            for (JsonElement e : outer) {
+                JsonArray inner = e.getAsJsonArray();
+                {{ item.innerType }} row = new ArrayList<>();
+                for (JsonElement v : inner) {
+                    row.add(gson.fromJson(v, {{ item.elementClass }}));
+                }
+                list2d.add(row);
+            }
+            {{ item.name }} = list2d;
+{%- elsif item.type contains 'List' %}
+            {{ item.type }} list = new ArrayList<>();
+            for (JsonElement e : obj.getAsJsonArray("{{ item.name }}")) {
+                list.add(gson.fromJson(e, {{ item.elementClass }}));
+            }
+            {{ item.name }} = list;
+{%- else %}
+            {{ item.name }} = gson.fromJson(obj.get("{{ item.name }}"), {{ item.type }}.class);
+{%- endif %}
+        }
+{%- endfor %}
+    }
+}

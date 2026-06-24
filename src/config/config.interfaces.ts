@@ -1,6 +1,6 @@
 export type JsonFormat = 'verbose' | 'compact';
 
-export type Language = 'typescript' | 'csharp' | 'java';
+export type Language = 'typescript' | 'csharp' | 'java' | 'python' | 'go' | 'php';
 
 export type CaseStyle = 'PascalCase' | 'camelCase' | 'snake_case' | 'keep';
 
@@ -42,5 +42,12 @@ export interface ExceltoolsConfig {
   languageSettings: Partial<Record<Language, LanguageSettings>>;
   /** 是否从 Excel 中自动检测枚举定义表（默认 true） */
   autoDetectEnums?: boolean;
+  /** 加密配置 */
+  encrypt?: {
+    /** 是否启用加密输出（输出 .dat 文件） */
+    enabled: boolean;
+    /** 加密密钥 */
+    key: string;
+  };
   verbose: boolean;
 }

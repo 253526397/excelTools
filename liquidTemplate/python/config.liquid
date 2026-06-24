@@ -1,0 +1,45 @@
+# 自动生成于 {{ sourceFile }} 时间: {{ generatedAt }}
+# 所有配置表统一入口
+# 请勿手动编辑此文件
+
+import json
+from typing import Any
+{%- for table in tables %}
+from .{{ table.tableName }} import {{ table.tableName }}, {{ table.tableName }}Meta
+{%- endfor %}
+
+
+def _load_table(obj: Any, meta: dict, target: type) -> None:
+    """泛型数据加载：兼容 verbose / compact / 纯数组格式"""
+    if isinstance(obj, list):
+        rows = obj
+    elif isinstance(obj, dict) and isinstance(obj.get("data"), list):
+        rows = obj["data"]
+    elif isinstance(obj, dict) and isinstance(obj.get("d"), list):
+        # compact 格式：列式数据 → 对象数组
+        names = [f[0] for f in obj.get("f", [])] if obj.get("f") else meta["fieldNames"]
+        rows = []
+        for vals in obj["d"]:
+            row = {}
+            for i, name in enumerate(names):
+                row[name] = vals[i] if i < len(vals) else None
+            rows.append(row)
+    else:
+        target.set_data_map(obj)
+        return
+
+    result: dict = {}
+    for row in rows:
+        result[str(row[meta["keyField"]])] = row
+    target.set_data_map(result)
+
+
+class Config:
+    """配置表统一入口"""
+
+    @staticmethod
+    def parseData(json_str: str) -> None:
+        all_data = json.loads(json_str)
+{%- for table in tables %}
+        _load_table(all_data["{{ table.tableName }}"], {{ table.tableName }}Meta, {{ table.tableName }})
+{%- endfor %}

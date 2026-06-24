@@ -1,0 +1,21 @@
+// 自动生成于 {{ sourceFile }} 时间: {{ generatedAt }}
+// 常量配置表
+// 请勿手动编辑此文件
+
+package config
+
+{%- for item in constants %}
+{%- if item.comment and item.comment != empty %}
+// {{ item.comment }}
+{%- endif %}
+var {{ item.name }} {{ item.type }} = {{ item.defaultValue }}
+{%- endfor %}
+
+// ParseConstants 从 JSON 数据加载常量
+func ParseConstants(obj map[string]interface{}) {
+{%- for item in constants %}
+    if v, ok := obj["{{ item.name }}"]; ok {
+        {{ item.name }} = v.({{ item.type }})
+    }
+{%- endfor %}
+}

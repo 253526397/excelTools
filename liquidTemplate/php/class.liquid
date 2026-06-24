@@ -1,0 +1,47 @@
+<?php
+// 自动生成于 {{ sourceFile }} 时间: {{ generatedAt }}
+// 表: {{ tableName }}
+// 请勿手动编辑此文件
+
+{%- if namespace %}
+namespace {{ namespace }};
+{%- endif %}
+{%- if importedEnums.size > 0 %}
+
+use {{ package }}\{{ enumFileName }};
+{%- endif %}
+
+class {{ tableName }}
+{
+{%- for field in fields %}
+{%- if field.comment and field.comment != "" %}
+    /** {{ field.comment }} */
+{%- endif %}
+    public {% if field.isArray or field.is2DArray %}array{% else %}{{ field.mappedType }}{% endif %} ${{ field.propertyName }}{% if not field.isArray and not field.is2DArray %} = null{% elsif field.isArray or field.is2DArray %} = []{% endif %};
+{%- endfor %}
+
+    private static array $_dataMap = [];
+
+    /** 数据 Map，key = {{ keyFieldName }}，可直接 foreach 遍历 */
+    public static function dataMap(): array
+    {
+        return self::$_dataMap;
+    }
+
+    public static function setDataMap(array $value): void
+    {
+        self::$_dataMap = $value;
+    }
+
+    /** 根据 {{ keyFieldName }} 查询 */
+    public static function Get(int|string $key): ?array
+    {
+        return self::$_dataMap[(string)$key] ?? null;
+    }
+}
+
+/** {{ tableName }} 元信息 */
+define('{{ tableName | upcase }}_META', [
+    'keyField' => '{{ keyFieldName }}',
+    'fieldNames' => {{ fieldNames }},
+]);

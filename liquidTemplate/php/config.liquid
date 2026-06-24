@@ -1,0 +1,56 @@
+<?php
+// 自动生成于 {{ sourceFile }} 时间: {{ generatedAt }}
+// 所有配置表统一入口
+// 请勿手动编辑此文件
+
+{%- if namespace %}
+namespace {{ namespace }};
+{%- endif %}
+{%- for table in tables %}
+require_once __DIR__ . '/{{ table.tableName }}.php';
+{%- endfor %}
+
+class Config
+{
+    /**
+     * 解析并加载所有配置表数据
+     * @param string $jsonStr 合并后的 JSON 字符串
+     */
+    public static function parseData(string $jsonStr): void
+    {
+        $allData = json_decode($jsonStr, true);
+{%- for table in tables %}
+        self::loadTable($allData['{{ table.tableName }}'], {{ table.tableName | upcase }}_META, {{ table.tableName }}::class);
+{%- endfor %}
+    }
+
+    /**
+     * 泛型数据加载：兼容 verbose / compact / 纯数组格式
+     */
+    private static function loadTable(array|object $obj, array $meta, string $targetClass): void
+    {
+        $obj = (array)$obj;
+        if (array_is_list($obj)) {
+            $rows = $obj;
+        } elseif (isset($obj['data']) && is_array($obj['data'])) {
+            $rows = $obj['data'];
+        } elseif (isset($obj['d']) && is_array($obj['d'])) {
+            $names = array_map(fn($f) => $f[0], $obj['f'] ?? []) ?: $meta['fieldNames'];
+            $rows = array_map(function($vals) use ($names) {
+                $row = [];
+                foreach ($names as $i => $name) {
+                    $row[$name] = $vals[$i] ?? null;
+                }
+                return $row;
+            }, $obj['d']);
+        } else {
+            $targetClass::setDataMap($obj);
+            return;
+        }
+        $map = [];
+        foreach ($rows as $row) {
+            $map[(string)$row[$meta['keyField']]] = $row;
+        }
+        $targetClass::setDataMap($map);
+    }
+}

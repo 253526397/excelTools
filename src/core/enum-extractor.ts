@@ -28,7 +28,7 @@ export function collectCandidateEnumNames(
   const { dataTypes: dtRow } = rowMapping;
 
   for (const sheet of sheets) {
-    if (dtRow >= sheet.rowCount) continue;
+    if (dtRow < 0 || dtRow >= sheet.rowCount) continue;
 
     const types = sheet.rows[dtRow];
     for (const cell of types) {
@@ -213,7 +213,7 @@ export function extractEnumsFromData(
 
   // 遍历所有数据 Sheet，找出引用候选枚举的列，收集数据值
   for (const sheet of dataSheets) {
-    if (dtRow >= sheet.rowCount) continue;
+    if (dtRow < 0 || dtRow >= sheet.rowCount) continue;
 
     const types = sheet.rows[dtRow];
 
