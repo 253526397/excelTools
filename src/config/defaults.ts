@@ -22,7 +22,6 @@ export function defaultConfig(): ExceltoolsConfig {
       mergeJson: false,
     },
     templates: {},
-    enums: {},
     excludeSheets: [],
     naming: {
       sheetNameToTableName: 'PascalCase',

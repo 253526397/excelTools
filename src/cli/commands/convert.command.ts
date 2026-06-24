@@ -11,8 +11,6 @@ import { setLogLevel, info, error, debug } from '../../utils/logger';
 import { ValidationCollector, reportValidationIssues } from '../../core/validation-collector';
 import {
   collectCandidateEnumNames,
-  classifySheets,
-  extractEnumDefinitions,
   extractEnumsFromData,
 } from '../../core/enum-extractor';
 
@@ -101,54 +99,20 @@ export async function convertCommand(input: string, options: ConvertOptions): Pr
     // 5. 提取常量
     const allConstants = extractConstants(constantSheets, config.rowMapping);
 
-    // 6. 决定枚举数据来源
-    let allEnums: Record<string, Record<string, number>>;
-    let allEnumKeys: Set<string>;
-    let dataSheets = sheets;
+    // 6. 自动检测枚举（从数据列收集）
+    const dataSheets = sheets;
+    let allEnums: Record<string, Record<string, number>> = {};
+    let allEnumKeys = new Set<string>();
 
     if (config.autoDetectEnums !== false) {
-      // === 自动检测 Excel 枚举 ===
-
-      // Pass 1: 扫描所有 Sheet 的类型行，收集候选枚举名
-      const candidateEnumNames = collectCandidateEnumNames(sheets, config.rowMapping, config.enums);
-
-      // Pass 2: 将 Sheet 分类为枚举定义表 / 数据表
-      const classification = classifySheets(
-        sheets, candidateEnumNames, config.enums, collector
-      );
-      const { enumSheets } = classification;
-      dataSheets = classification.dataSheets;
-
-      info(`枚举定义表: ${enumSheets.length} 个, 数据表: ${dataSheets.length} 个`);
-
-      // Pass 3: 方式一 —— 从专用枚举 Sheet 提取
-      const sheetExtractedEnums = extractEnumDefinitions(enumSheets, config.rowMapping, collector);
-
-      // Pass 4: 方式二 —— 剩余候选枚举名（无专用 Sheet）从数据列中自动收集
-      const sheetEnumKeys = new Set(Object.keys(sheetExtractedEnums));
-      const configEnumKeys = new Set(Object.keys(config.enums));
-      const pendingEnumNames = new Set(
-        [...candidateEnumNames].filter(name => !sheetEnumKeys.has(name) && !configEnumKeys.has(name))
-      );
-      const dataExtractedEnums = extractEnumsFromData(
-        dataSheets, pendingEnumNames, config.rowMapping, collector
-      );
-
-      // 合并枚举（优先级：config.enums > 专用Sheet > 数据列自动收集）
-      allEnums = { ...dataExtractedEnums, ...sheetExtractedEnums, ...config.enums };
-      allEnumKeys = new Set(Object.keys(allEnums));
-
-      if (Object.keys(sheetExtractedEnums).length > 0) {
-        info(`从专用枚举表提取了 ${Object.keys(sheetExtractedEnums).length} 个枚举: ${Object.keys(sheetExtractedEnums).join(', ')}`);
+      const candidateEnumNames = collectCandidateEnumNames(sheets, config.rowMapping);
+      if (candidateEnumNames.size > 0) {
+        allEnums = extractEnumsFromData(dataSheets, candidateEnumNames, config.rowMapping, collector);
+        allEnumKeys = new Set(Object.keys(allEnums));
+        if (Object.keys(allEnums).length > 0) {
+          info(`自动检测到 ${Object.keys(allEnums).length} 个枚举: ${Object.keys(allEnums).join(', ')}`);
+        }
       }
-      if (Object.keys(dataExtractedEnums).length > 0) {
-        info(`从数据列自动收集了 ${Object.keys(dataExtractedEnums).length} 个枚举: ${Object.keys(dataExtractedEnums).join(', ')}`);
-      }
-    } else {
-      // === 旧流程：仅使用 config.enums ===
-      debug('autoDetectEnums=false，仅使用配置文件中的枚举定义');
-      allEnums = config.enums;
-      allEnumKeys = new Set(Object.keys(allEnums));
     }
 
     // 6. 构建 Schema 并提取数据（仅数据 Sheet）

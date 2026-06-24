@@ -1,7 +1,6 @@
 import type { RawSheetData, ExcelRowMapping } from '../models/excel.interfaces';
 import type { ValidationCollector } from './validation-collector';
-import { ValidationSeverity, ValidationCategory } from '../models/validation.interfaces';
-import { debug, warn } from '../utils/logger';
+import { debug } from '../utils/logger';
 
 const BASE_TYPES = new Set(['int', 'float', 'string', 'bool', 'object']);
 
@@ -21,10 +20,8 @@ function deriveBaseType(type: string): string {
 export function collectCandidateEnumNames(
   sheets: RawSheetData[],
   rowMapping: ExcelRowMapping,
-  configEnums: Record<string, Record<string, number>>,
 ): Set<string> {
   const candidates = new Set<string>();
-  const configEnumKeys = new Set(Object.keys(configEnums));
   const { dataTypes: dtRow } = rowMapping;
 
   for (const sheet of sheets) {
@@ -37,7 +34,7 @@ export function collectCandidateEnumNames(
       if (!typeStr) continue;
 
       const base = deriveBaseType(typeStr);
-      if (!BASE_TYPES.has(base) && !configEnumKeys.has(base)) {
+      if (!BASE_TYPES.has(base)) {
         candidates.add(base);
       }
     }
@@ -45,135 +42,6 @@ export function collectCandidateEnumNames(
 
   debug(`候选枚举名: ${[...candidates].join(', ') || '(无)'}`);
   return candidates;
-}
-
-/**
- * 将 Sheet 分类为"枚举定义表"和"数据表"。
- * 规则：sheetName 在 candidateEnumNames 中，且不在 configEnums 中 → 枚举表
- */
-export function classifySheets(
-  sheets: RawSheetData[],
-  candidateEnumNames: Set<string>,
-  configEnums: Record<string, Record<string, number>>,
-  collector?: ValidationCollector,
-): { enumSheets: RawSheetData[]; dataSheets: RawSheetData[] } {
-  const enumSheets: RawSheetData[] = [];
-  const dataSheets: RawSheetData[] = [];
-  const configEnumKeys = new Set(Object.keys(configEnums));
-
-  for (const sheet of sheets) {
-    // config.enums 已定义的枚举不会被 Excel 枚举表覆盖（配置优先）
-    if (candidateEnumNames.has(sheet.sheetName) && !configEnumKeys.has(sheet.sheetName)) {
-      // 基本格式检查：枚举表至少需要2列
-      if (sheet.colCount < 2) {
-        collector?.add({
-          severity: ValidationSeverity.WARNING,
-          category: ValidationCategory.UNKNOWN_TYPE,
-          location: { sheetName: sheet.sheetName, rowIndex: 0, columnIndex: 0 },
-          message: `枚举定义表 "${sheet.sheetName}" 列数不足（需要至少2列: 名称 + 值），已跳过。`,
-          suggestion: '枚举表第1列为成员名称，第2列为整数值。请补充列或删除该表。',
-        });
-        continue;
-      }
-      enumSheets.push(sheet);
-    } else {
-      dataSheets.push(sheet);
-    }
-  }
-
-  return { enumSheets, dataSheets };
-}
-
-/**
- * 从枚举定义 Sheet 中提取枚举成员的名称和值。
- *
- * 格式约定（沿用 rowMapping）：
- *   列0 = 枚举成员名称（字符串）
- *   列1 = 枚举成员值（整数）
- *
- * 注意事项：
- *   - 从 rowMapping.dataStart 行开始读取
- *   - 名称为空的行跳过（WARNING）
- *   - 值列无法解析为整数的跳过（WARNING）
- *   - 重复成员名后者覆盖前者（WARNING）
- */
-export function extractEnumDefinitions(
-  enumSheets: RawSheetData[],
-  rowMapping: ExcelRowMapping,
-  collector?: ValidationCollector,
-): Record<string, Record<string, number>> {
-  const result: Record<string, Record<string, number>> = {};
-  const { dataStart } = rowMapping;
-
-  for (const sheet of enumSheets) {
-    const enumName = sheet.sheetName;
-    const members: Record<string, number> = {};
-
-    for (let ri = dataStart; ri < sheet.rowCount; ri++) {
-      const row = sheet.rows[ri];
-
-      // 跳过全空行
-      if (!row || row.every(c => c === null || c === '' || c === undefined)) {
-        continue;
-      }
-
-      const rawName = row[0];
-      const rawValue = row[1];
-
-      const memberName = rawName !== null && rawName !== undefined ? String(rawName).trim() : '';
-      if (!memberName) {
-        collector?.add({
-          severity: ValidationSeverity.WARNING,
-          category: ValidationCategory.EMPTY_FIELD_NAME,
-          location: { sheetName: sheet.sheetName, rowIndex: ri, columnIndex: 0 },
-          message: `枚举 "${enumName}": 第${ri + 1}行缺少成员名称，已跳过。`,
-          suggestion: '请为每一行填写枚举成员名称。',
-        });
-        continue;
-      }
-
-      const valueStr = rawValue !== null && rawValue !== undefined ? String(rawValue).trim() : '';
-      const value = parseInt(valueStr, 10);
-      if (isNaN(value)) {
-        collector?.add({
-          severity: ValidationSeverity.WARNING,
-          category: ValidationCategory.COERCION_FAILURE,
-          location: {
-            sheetName: sheet.sheetName,
-            rowIndex: ri,
-            columnIndex: 1,
-            columnName: memberName,
-          },
-          message: `枚举 "${enumName}" 成员 "${memberName}" 的值 "${valueStr}" 无法解析为整数，已跳过。`,
-          rawValue: valueStr,
-          expectedType: 'int',
-          suggestion: '请确保枚举值列为整数数字。',
-        });
-        continue;
-      }
-
-      if (memberName in members) {
-        warn(`枚举 "${enumName}" 成员名 "${memberName}" 重复，后者覆盖前者`);
-      }
-
-      members[memberName] = value;
-    }
-
-    if (Object.keys(members).length === 0) {
-      collector?.add({
-        severity: ValidationSeverity.WARNING,
-        category: ValidationCategory.UNKNOWN_TYPE,
-        location: { sheetName: sheet.sheetName, rowIndex: 0, columnIndex: 0 },
-        message: `枚举定义表 "${enumName}" 无有效枚举成员。`,
-        suggestion: '请确保枚举表的数据行中填写了成员名称和值。',
-      });
-    }
-
-    result[enumName] = members;
-    debug(`从 Excel 提取枚举 "${enumName}": ${Object.keys(members).length} 个成员`);
-  }
-
-  return result;
 }
 
 /**

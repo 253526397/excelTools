@@ -43,14 +43,8 @@ const DEFAULT_CONFIG_JSON5 = `{
     "overrides": {},    // 单独覆盖某个模板文件: { "typescript/interface.liquid": "路径" }
   },
 
-  // 全局枚举注册表（可留空 {}，工具会自动从 Excel 检测枚举）
-  // 精确枚举值：在此处定义可精确控制枚举值编号
-  // 专用Sheet：在 Excel 中新建同名 Sheet，列A=名称，列B=值
-  // 自动收集：什么都不做，工具从数据列中自动收集唯一值并编号
-  "enums": {
-    // 示例：
-    // "SkillType": { "Attack": 1, "Defense": 2, "Heal": 3, "Buff": 4 },
-  },
+  // 枚举自动检测：工具会从数据列中自动收集枚举值并按字母排序编号
+  // 只需在类型行写枚举名（如 SkillType），无需额外配置
 
   // 排除的工作表名称（不会被解析为数据表）
   "excludeSheets": [],

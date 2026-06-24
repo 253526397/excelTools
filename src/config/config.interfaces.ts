@@ -33,7 +33,6 @@ export interface ExceltoolsConfig {
     customDir?: string | null;
     overrides?: Record<string, string | null>;
   };
-  enums: Record<string, Record<string, number>>;
   excludeSheets: string[];
   naming: {
     sheetNameToTableName: CaseStyle;

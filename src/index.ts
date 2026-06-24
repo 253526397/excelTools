@@ -12,7 +12,5 @@ export {
 export type { ValidationIssue, SourceLocation } from './models/validation.interfaces';
 export {
   collectCandidateEnumNames,
-  classifySheets,
-  extractEnumDefinitions,
   extractEnumsFromData,
 } from './core/enum-extractor';

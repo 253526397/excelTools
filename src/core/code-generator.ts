@@ -16,7 +16,7 @@ export async function generateCode(
   allEnums?: Record<string, Record<string, number>>,
   constants?: { name: string; type: string; value: unknown; comment: string }[],
 ): Promise<void> {
-  const mergedEnums = allEnums ?? config.enums;
+  const mergedEnums = allEnums ?? {};
   const enumKeys = new Set(Object.keys(mergedEnums));
 
   for (const lang of languages) {
