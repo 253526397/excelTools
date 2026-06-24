@@ -14,7 +14,7 @@ program
   .description('转换 Excel 文件为 JSON 数据和代码文件')
   .argument('<input>', '输入的 Excel 文件路径 (.xlsx) 或包含 .xlsx 的目录')
   .option('-l, --lang <languages>', '目标语言(逗号分隔): typescript,csharp,java')
-  .option('-o, --output <dir>', '输出根目录', './output')
+  .option('-o, --output <dir>', '输出根目录（不指定则使用配置文件中的路径）')
   .option('-c, --config <path>', '配置文件路径')
   .option('-s, --sheets <names>', '只处理指定工作表(逗号分隔)')
   .option('-t, --templates <dir>', '自定义模板目录')

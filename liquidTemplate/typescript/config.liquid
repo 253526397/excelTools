@@ -4,7 +4,9 @@
 {%- for table in tables %}
 import { {{ table.tableName }}, {{ table.tableName }}Meta } from './{{ table.tableName }}';
 {%- endfor %}
+{%- if hasConstants %}
 import { ConfigConstants } from './ConfigConstants';
+{%- endif %}
 
 export class Config {
   /**
@@ -16,8 +18,9 @@ export class Config {
 {%- for table in tables %}
     Config.loadTable(allData['{{ table.tableName }}'], {{ table.tableName }}Meta, {{ table.tableName }});
 {%- endfor %}
-    // 常量表
+{%- if hasConstants %}
     if (allData['Config']) ConfigConstants.parseData(allData['Config']);
+{%- endif %}
   }
 
   /**

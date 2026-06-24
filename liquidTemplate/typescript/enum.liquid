@@ -5,7 +5,7 @@
 export enum {{ enum.name }} {
 {%- for item in enum.values %}
   /** {{ item.name }} */
-  {{ item.name }} = {{ item.value }},
+  {{ item.name }} = "{{ item.name }}",
 {%- endfor %}
 }
 {%- endfor %}

@@ -21,7 +21,9 @@ export async function generateCode(
 
   for (const lang of languages) {
     const { liquid, buildVariables } = createTemplateContext(lang, enumKeys);
-    const langOutputDir = path.resolve(config.output.code, lang);
+    const langOutputDir = config.output.codeLangSubDir !== false
+      ? path.resolve(config.output.code, lang)
+      : path.resolve(config.output.code);
     fs.mkdirSync(langOutputDir, { recursive: true });
 
     const langSettings = config.languageSettings[lang];
@@ -88,7 +90,7 @@ export async function generateCode(
 
     // 生成 Config 统一入口
     if (tableDataList.length > 0) {
-      await generateConfigFile(lang, tableDataList, config, langOutputDir, sourceFile);
+      await generateConfigFile(lang, tableDataList, config, langOutputDir, sourceFile, constants);
     }
 
     // 生成常量文件
@@ -298,6 +300,7 @@ async function generateConfigFile(
   config: ExceltoolsConfig,
   outputDir: string,
   sourceFile: string,
+  constants?: { name: string; type: string; value: unknown; comment: string }[],
 ): Promise<void> {
   try {
     const { liquid } = createTemplateContext(lang, new Set());
@@ -305,6 +308,7 @@ async function generateConfigFile(
     const templateSource = fs.readFileSync(templatePath, 'utf-8');
 
     const langSettings = config.languageSettings[lang];
+    const hasConstants = constants && constants.length > 0;
     const variables = {
       sourceFile,
       generatedAt: new Date().toISOString(),
@@ -313,6 +317,7 @@ async function generateConfigFile(
       package: 'package' in (langSettings ?? {})
         ? (langSettings as { package?: string | null }).package : null,
       tables: tableDataList.map(t => ({ tableName: t.tableName })),
+      hasConstants,
     };
 
     const rendered = await liquid.parseAndRender(templateSource, variables);

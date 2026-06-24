@@ -170,6 +170,7 @@ export async function convertCommand(input: string, options: ConvertOptions): Pr
         ? 'compact'
         : (config.output.jsonFormat ?? 'verbose');
       const jsonOutputDir = path.resolve(config.output.json);
+      debug(`JSON 输出目录: config.output.json=${config.output.json} → ${jsonOutputDir}`);
       const mergeJson = config.output.mergeJson ?? false;
       serializeToJson(tableDataList, jsonOutputDir, jsonFormat, mergeJson);
 
@@ -193,10 +194,12 @@ export async function convertCommand(input: string, options: ConvertOptions): Pr
         }
       }
 
-      // 加密输出
+      // 加密输出（加密后删除原始 JSON）
       if (config.encrypt?.enabled) {
-        const encryptOutputDir = path.resolve(config.output.json, '..', 'encrypt');
-        encryptJsonFiles(jsonOutputDir, encryptOutputDir, config.encrypt.key);
+        encryptJsonFiles(jsonOutputDir, jsonOutputDir, config.encrypt.key);
+        const jsonFiles = fs.readdirSync(jsonOutputDir).filter(f => f.endsWith('.json'));
+        for (const f of jsonFiles) fs.unlinkSync(path.join(jsonOutputDir, f));
+        debug(`已删除 ${jsonFiles.length} 个原始 JSON 文件`);
       }
     }
 

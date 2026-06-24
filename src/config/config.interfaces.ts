@@ -28,6 +28,8 @@ export interface ExceltoolsConfig {
     jsonFormat?: JsonFormat;
     /** 将所有表的 JSON 合并输出到单个文件（默认 false，每个表独立文件） */
     mergeJson?: boolean;
+    /** 代码输出是否按语言分目录（默认 true） */
+    codeLangSubDir?: boolean;
   };
   templates: {
     customDir?: string | null;

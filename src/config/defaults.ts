@@ -20,6 +20,7 @@ export function defaultConfig(): ExceltoolsConfig {
       code: './output/code',
       jsonFormat: 'verbose',
       mergeJson: false,
+      codeLangSubDir: true,
     },
     templates: {},
     excludeSheets: [],

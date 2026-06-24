@@ -22,6 +22,7 @@
   "output": {
     "json": "./output/json",   // JSON 数据文件输出目录
     "code": "./output/code",   // 代码文件输出目录
+    "codeLangSubDir": true,   // ← 关掉语言子目录
     // jsonFormat: "verbose" = 完整结构带缩进 / "compact" = 压缩短键名
     "jsonFormat": "compact",
     // mergeJson: false = 每个表独立文件 / true = 所有表合并到 config.json

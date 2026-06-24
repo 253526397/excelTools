@@ -1,7 +1,7 @@
 import * as fs from 'fs';
 import * as path from 'path';
 import { cosmiconfig } from 'cosmiconfig';
-import * as json5 from 'json5';
+import json5 from 'json5';
 import type { ExceltoolsConfig, Language } from './config.interfaces';
 import { defaultConfig } from './defaults';
 import { debug } from '../utils/logger';
@@ -71,6 +71,9 @@ export async function loadConfig(options: {
   // 3. 合并文件配置
   if (fileConfig) {
     deepMerge(config as any, fileConfig as any);
+    debug(`配置文件已合并, output.json=${config.output.json}, output.code=${config.output.code}`);
+  } else {
+    debug('未找到配置文件，使用默认值');
   }
 
   // 4. 应用 CLI 参数覆盖
@@ -79,7 +82,7 @@ export async function loadConfig(options: {
     validateLanguages(config.languages);
   }
 
-  if (options.output) {
+  if (options.output && options.output !== './output') {
     config.output.json = path.join(options.output, 'json');
     config.output.code = path.join(options.output, 'code');
   }
